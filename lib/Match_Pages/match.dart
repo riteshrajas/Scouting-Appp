@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:scouting_app/main.dart';
+import 'package:scouting_app/services/Colors.dart';
 
 import '../Experiment/ExpStateManager.dart';
-import '../services/DataBase.dart';
 import '../components/QrGenerator.dart';
+import '../services/DataBase.dart';
 import 'match/Auton.dart';
 import 'match/EndGame.dart';
 import 'match/TeleOperated.dart';
@@ -41,6 +43,8 @@ class MatchState extends State<Match> {
         canPop: false,
         child: Scaffold(
           appBar: AppBar(
+            backgroundColor:
+                islightmode() ? Colors.white : darkColors.goodblack,
             leading: Container(
                 margin: const EdgeInsets.only(left: 20, top: 15),
                 child: Text(_selectedStation,
@@ -79,14 +83,20 @@ class MatchState extends State<Match> {
                               fullscreenDialog: true),
                         ).then((value) => _checkExperimentBox()),
                       },
-                  child: const Icon(
+                  child: Icon(
                     Icons.check_rounded,
+                    color: !islightmode()
+                        ? const Color.fromARGB(255, 255, 255, 255)
+                        : const Color.fromARGB(255, 34, 34, 34),
                     size: 30,
                   )),
             ],
           ),
           body: _match(context, _selectedIndex),
           bottomNavigationBar: BottomNavigationBar(
+            backgroundColor:
+                islightmode() ? Colors.white : darkColors.goodblack,
+            unselectedItemColor: islightmode() ? Colors.black : Colors.white,
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(
                 icon: Icon(Icons.auto_awesome),
@@ -117,19 +127,22 @@ class MatchState extends State<Match> {
     switch (selectedIndex) {
       case 0:
         return SingleChildScrollView(
+            key: const PageStorageKey("AutonScroll"),
             child: Auton(
-          matchRecord: widget.matchRecord,
-        ));
+              matchRecord: widget.matchRecord,
+            ));
       case 1:
         return SingleChildScrollView(
+            key: const PageStorageKey("TeleOpScroll"),
             child: TeleOperated(
-          matchRecord: widget.matchRecord,
-        ));
+              matchRecord: widget.matchRecord,
+            ));
       case 2:
         return SingleChildScrollView(
+            key: const PageStorageKey("EndGameScroll"),
             child: EndGame(
-          matchRecord: widget.matchRecord,
-        ));
+              matchRecord: widget.matchRecord,
+            ));
       default:
         return Container();
     }

@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/painting.dart';
 import 'package:hive/hive.dart';
@@ -104,22 +107,25 @@ class PitRecord {
   final String autonType;
   final List<String> scoreObject;
   final List<String> scoreType;
-  final String intake;
+  final List<String> intake;
   final List<String> climbType;
-  final String imageblob;
+  final String botImage1;
+  final String botImage2;
+  final String botImage3;
 
-  PitRecord({
-    required this.teamNumber,
-    required this.scouterName,
-    required this.eventKey,
-    required this.driveTrainType,
-    required this.autonType,
-    required this.scoreObject,
-    required this.scoreType,
-    required this.intake,
-    required this.climbType,
-    required this.imageblob,
-  });
+  PitRecord(
+      {required this.teamNumber,
+      required this.scouterName,
+      required this.eventKey,
+      required this.driveTrainType,
+      required this.autonType,
+      required this.scoreObject,
+      required this.scoreType,
+      required this.intake,
+      required this.climbType,
+      required this.botImage1,
+      required this.botImage2,
+      required this.botImage3});
 
   Map<String, dynamic> toJson() {
     return {
@@ -132,7 +138,9 @@ class PitRecord {
       "scoreType": scoreType,
       "intake": intake,
       "climbType": climbType,
-      "imageblob": imageblob
+      "botImage1": botImage1,
+      "botImage2": botImage2,
+      "botImage3": botImage3
     };
   }
 
@@ -154,6 +162,23 @@ class PitRecord {
       return [];
     }
 
+    // Parse intake which might also be a string representation of a list
+    List<String> parseIntake() {
+      var intakeData = json['intake'];
+      if (intakeData == null) return [];
+      if (intakeData is List) return List<String>.from(intakeData);
+      if (intakeData is String) {
+        // Parse string representation of list
+        if (intakeData.startsWith('[') && intakeData.endsWith(']')) {
+          String listContent = intakeData.substring(1, intakeData.length - 1);
+          return listContent.isEmpty
+              ? []
+              : listContent.split(', ').map((s) => s.trim()).toList();
+        }
+      }
+      return [];
+    }
+
     return PitRecord(
       teamNumber: json['teamNumber'] ?? 0,
       scouterName: json['scouterName'] ?? '',
@@ -163,12 +188,14 @@ class PitRecord {
       autonType: json['auton'] ?? '',
       scoreType:
           json['scoreType'] is List ? List<String>.from(json['scoreType']) : [],
-      scoreObject: parseScoreObject(),
-      intake: json['intake'] ?? '',
+      scoreObject: List<String>.from(parseScoreObject()),
+      intake: List<String>.from(parseIntake()),
       climbType:
           json['climbType'] is List ? List<String>.from(json['climbType']) : [],
 
-      imageblob: json['imageblob'] ?? '',
+      botImage1: json['botImage1'] ?? '',
+      botImage2: json['botImage2'] ?? '',
+      botImage3: json['botImage3'] ?? '',
     );
   }
 }
@@ -455,7 +482,7 @@ class MatchDataBase {
   }
 
   static void PrintAll() {
-    print(_storage);
+    log(_storage as String);
   }
 
   static List<int> GetRecorderTeam() {
@@ -490,6 +517,7 @@ class MatchDataBase {
       eventKey: json['eventKey'] ?? "",
       station: json['station'] ?? 0,
       matchNumber: json['matchNumber'] ?? 0,
+      batteryPercentage: json['batteryPercentage'] ?? 0,
     );
   }
 
@@ -505,6 +533,7 @@ class MatchDataBase {
       eventKey: map['eventKey'] ?? "",
       station: map['station'] ?? 0,
       matchNumber: map['matchNumber'] ?? 0,
+      batteryPercentage: map['batteryPercentage'] ?? 0,
     );
   }
 
@@ -520,6 +549,7 @@ class MatchDataBase {
       'autonPoints': record.autonPoints.toJson(),
       'teleOpPoints': record.teleOpPoints.toJson(),
       'endPoints': record.endPoints.toJson(),
+      'batteryPercentage': record.batteryPercentage,
     };
   }
 
@@ -551,6 +581,7 @@ class MatchRecord {
   AutonPoints autonPoints;
   TeleOpPoints teleOpPoints;
   EndPoints endPoints;
+  final int batteryPercentage;
 
   MatchRecord(
     this.autonPoints,
@@ -563,6 +594,7 @@ class MatchRecord {
     required this.eventKey,
     required this.station,
     required this.matchNumber,
+    required this.batteryPercentage,
   });
 
   Map<String, dynamic> toJson() {
@@ -577,11 +609,12 @@ class MatchRecord {
       "autonPoints": autonPoints.toJson(),
       "teleOpPoints": teleOpPoints.toJson(),
       "endPoints": endPoints.toJson(),
+      "batteryPercentage": batteryPercentage,
     };
   }
 
   String toCsv() {
-    return '${teamNumber},${scouterName},${matchKey},${allianceColor},${eventKey},${station},${matchNumber}, ${autonPoints.toCsv()}, ${teleOpPoints.toCsv()}, ${endPoints.toCsv()}';
+    return '${batteryPercentage},${teamNumber},${scouterName},${matchKey},${allianceColor},${eventKey},${station},${matchNumber}, ${autonPoints.toCsv()}, ${teleOpPoints.toCsv()}, ${endPoints.toCsv()}';
   }
 
   static MatchRecord fromJson(Map<String, dynamic> json) {
@@ -596,12 +629,13 @@ class MatchRecord {
       eventKey: json['eventKey'] ?? "",
       station: json['station'] ?? 0,
       matchNumber: json['matchNumber'] ?? 0,
+      batteryPercentage: json['batteryPercentage'] ?? 0,
     );
   }
 
   @override
   String toString() {
-    return 'MatchRecord{teamNumber: $teamNumber, scouterName: $scouterName, matchKey: $matchKey, autonPoints: $autonPoints, teleOpPoints: $teleOpPoints, endPoints: $endPoints, allianceColor: $allianceColor, eventKey: $eventKey, station: $station}';
+    return 'MatchRecord{batteryPercentage: $batteryPercentage, teamNumber: $teamNumber, scouterName: $scouterName, matchKey: $matchKey, autonPoints: $autonPoints, teleOpPoints: $teleOpPoints, endPoints: $endPoints, allianceColor: $allianceColor, eventKey: $eventKey, station: $station}';
   }
 
   String toJsonString() {
@@ -628,221 +662,441 @@ class MatchRecord {
         matchKey.hashCode ^
         autonPoints.hashCode ^
         teleOpPoints.hashCode ^
-        endPoints.hashCode;
+        endPoints.hashCode ^
+        batteryPercentage.hashCode;
   }
 }
 
 // AutonPoints
 class AutonPoints {
-  int CoralScoringLevel1 = 0;
-  int CoralScoringLevel2 = 0;
-  int CoralScoringLevel3 = 0;
-  int CoralScoringLevel4 = 0;
-  bool LeftBarge = false;
-  int AlgaeScoringProcessor = 0;
-  int AlgaeScoringBarge = 0;
-  BotLocation robot_position;
+  bool fuel_pickup_from_Depot = false;
+  bool fuel_pickup_from_Outpost = false;
+  bool fuel_pickup_from_Neutral_Zone = false;
+  bool left_starting_position = false;
+  double total_shooting_time = 0;
+  int amountOfShooting = 0;
+  bool climb = false;
+  String winAfterAuton = "";
+  BotLocation starting_location;
 
   AutonPoints(
-    this.CoralScoringLevel1,
-    this.CoralScoringLevel2,
-    this.CoralScoringLevel3,
-    this.CoralScoringLevel4,
-    this.LeftBarge,
-    this.AlgaeScoringProcessor,
-    this.AlgaeScoringBarge,
-    this.robot_position,
+    this.fuel_pickup_from_Depot,
+    this.fuel_pickup_from_Outpost,
+    this.fuel_pickup_from_Neutral_Zone,
+    this.total_shooting_time,
+    this.amountOfShooting,
+    this.climb,
+    this.winAfterAuton,
+    this.starting_location,
+    this.left_starting_position,
   );
 
   Map<String, dynamic> toJson() {
     return {
-      "CoralScoringLevel1": CoralScoringLevel1,
-      "CoralScoringLevel2": CoralScoringLevel2,
-      "CoralScoringLevel3": CoralScoringLevel3,
-      "CoralScoringLevel4": CoralScoringLevel4,
-      "LeftBarge": LeftBarge,
-      "AlgaeScoringProcessor": AlgaeScoringProcessor,
-      "AlgaeScoringBarge": AlgaeScoringBarge,
-      "RobotLocation": robot_position.toJson(),
+      "FuelPickUpFromDepot": fuel_pickup_from_Depot,
+      "FuelPickUpFromOutpost": fuel_pickup_from_Outpost,
+      "FuelPickUpFromNeutralZone": fuel_pickup_from_Neutral_Zone,
+      "TotalShootingTime": total_shooting_time,
+      "Climb": climb,
+      "WinAfterAuton": winAfterAuton,
+      "RobotLocation": starting_location.toJson(),
+      "LeftStartingPosition": left_starting_position
     };
   }
 
   String toCsv() {
-    return '${CoralScoringLevel1},${CoralScoringLevel2},${CoralScoringLevel3},${CoralScoringLevel4},${LeftBarge},${AlgaeScoringProcessor},${AlgaeScoringBarge},${robot_position.toCsv()}';
+    return '$left_starting_position,$fuel_pickup_from_Depot,$fuel_pickup_from_Outpost,$fuel_pickup_from_Neutral_Zone,$total_shooting_time,$amountOfShooting,$climb,$winAfterAuton,${starting_location.toCsv()}';
   }
 
   static AutonPoints fromJson(Map<String, dynamic> json) {
     return AutonPoints(
-      json['CoralScoringLevel1'] ?? 0,
-      json['CoralScoringLevel2'] ?? 0,
-      json['CoralScoringLevel3'] ?? 0,
-      json['CoralScoringLevel4'] ?? 0,
-      json['LeftBarge'] ?? false,
-      json['AlgaeScoringProcessor'] ?? 0,
-      json['AlgaeScoringBarge'] ?? 0,
-      BotLocation.fromJson(json['RobotLocation'] ?? {}),
+      json['FuelPickUpFromDepot'] ?? false,
+      json['FuelPickUpFromOutpost'] ?? false,
+      json['FuelPickUpFromNeutralZone'] ?? false,
+      json['TotalShootingTime'] ?? 0,
+      json["Amount of Shooting"] ?? 0,
+      json['Climb'] ?? false,
+      json['WinAfterAuton'] ?? "",
+      BotLocation.fromJson(
+        json['RobotLocation'] ??
+            {
+              'position': {'x': 0.0, 'y': 0.0},
+              'size': {'width': 0.0, 'height': 0.0},
+              'angle': 0.0
+            },
+      ),
+      json['LeftStartingPosition'] ?? false,
     );
   }
 
   @override
   String toString() {
-    return 'AutonPoints{CoralScoringLevel1: $CoralScoringLevel1, CoralScoringLevel2: $CoralScoringLevel2, CoralScoringLevel3: $CoralScoringLevel3, CoralScoringLevel4: $CoralScoringLevel4, LeftBarge: $LeftBarge, AlgaeScoringProcessor: $AlgaeScoringProcessor, AlgaeScoringBarge: $AlgaeScoringBarge, RobotLocation: $robot_position}';
+    return 'AutonPoints{FuelPickUpFromDepot: $fuel_pickup_from_Depot, FuelPickUpFromOutpost: $fuel_pickup_from_Outpost, FuelPickUpFromNeutralZone: $fuel_pickup_from_Neutral_Zone, TotalShootingTime: $total_shooting_time, Climb: $climb, WinAfterAuton: $winAfterAuton, LeftStartingPosition: $left_starting_position, RobotLocation: $starting_location}';
   }
 
-  void setCoralScoringL1(int value) {
-    CoralScoringLevel1 = value;
+  void setFuelPickupFromDepot(bool value) {
+    fuel_pickup_from_Depot = value;
   }
 
-  setCoralScoringL2(int value) {
-    CoralScoringLevel2 = value;
+  setFuelPickupFromOutpost(bool value) {
+    fuel_pickup_from_Outpost = value;
   }
 
-  setCoralScoringL3(int value) {
-    CoralScoringLevel3 = value;
+  setFuelPickUpFromNeutralZone(bool value) {
+    fuel_pickup_from_Neutral_Zone = value;
   }
 
-  setCoralScoringL4(int value) {
-    CoralScoringLevel4 = value;
+  setTotalShootingTime(double value) {
+    total_shooting_time = value;
   }
 
-  setAlgaeScoringProcessor(int value) {
-    AlgaeScoringProcessor = value;
+  setClimb(bool value) {
+    climb = value;
   }
 
-  setAlgaeScoringBarge(int value) {
-    AlgaeScoringBarge = value;
+  setWinAfterAuton(String value) {
+    winAfterAuton = value;
   }
 
-  setLeftBarge(bool value) {
-    LeftBarge = value;
+  setStartingLocation(BotLocation value) {
+    starting_location = value;
   }
 }
 
 // TeleOpPoints
 class TeleOpPoints {
-  int CoralScoringLevel1 = 0;
-  int CoralScoringLevel2 = 0;
-  int CoralScoringLevel3 = 0;
-  int CoralScoringLevel4 = 0;
-  int AlgaeScoringBarge = 0;
-  int AlgaeScoringProcessor = 0;
-  int AlgaePickUp = 0;
-  bool Defense = true;
+  double TotalShootingTime1 = 0;
+  double TotalShootingTimeA1 = 0;
+  double TotalShootingTimeA2 = 0;
+  double TotalShootingTimeI1 = 0;
+  double TotalShootingTimeI2 = 0;
+  int TotalAmount1 = 0;
+  int TotalAmountA1 = 0;
+  int TotalAmountA2 = 0;
+  int TotalAmountI1 = 0;
+  int TotalAmountI2 = 0;
+  int TripAmount1 = 0;
+  bool Defense = false;
+  bool DefenseA1 = false;
+  bool DefenseA2 = false;
+  bool DefenseI1 = false;
+  bool DefenseI2 = false;
+  int NeutralTrips = 0;
+  int NeutralTripsA1 = 0;
+  int NeutralTripsA2 = 0;
+  int NeutralTripsI1 = 0;
+  int NeutralTripsI2 = 0;
+  bool FeedToHPStation = false;
+  bool FeedToHPStationA1 = false;
+  bool FeedToHPStationA2 = false;
+  bool FeedToHPStationI1 = false;
+  bool FeedToHPStationI2 = false;
+  bool passing = false;
+  bool passingA1 = false;
+  bool passingA2 = false;
+  bool passingI1 = false;
+  bool passingI2 = false;
 
   TeleOpPoints(
-    this.CoralScoringLevel1,
-    this.CoralScoringLevel2,
-    this.CoralScoringLevel3,
-    this.CoralScoringLevel4,
-    this.AlgaeScoringBarge,
-    this.AlgaeScoringProcessor,
-    this.AlgaePickUp,
-    this.Defense,
-  );
+      this.TotalShootingTime1,
+      this.TotalShootingTimeA1,
+      this.TotalShootingTimeA2,
+      this.TotalShootingTimeI1,
+      this.TotalShootingTimeI2,
+      this.TotalAmount1,
+      this.TotalAmountA1,
+      this.TotalAmountA2,
+      this.TotalAmountI1,
+      this.TotalAmountI2,
+      this.TripAmount1,
+      this.Defense,
+      this.DefenseA1,
+      this.DefenseA2,
+      this.DefenseI1,
+      this.DefenseI2,
+      this.NeutralTrips,
+      this.NeutralTripsA1,
+      this.NeutralTripsA2,
+      this.NeutralTripsI1,
+      this.NeutralTripsI2,
+      this.FeedToHPStation,
+      this.FeedToHPStationA1,
+      this.FeedToHPStationA2,
+      this.FeedToHPStationI1,
+      this.FeedToHPStationI2,
+      this.passing,
+      this.passingA1,
+      this.passingA2,
+      this.passingI1,
+      this.passingI2);
 
   Map<String, dynamic> toJson() {
     return {
-      "CoralScoringLevel1": CoralScoringLevel1,
-      "CoralScoringLevel2": CoralScoringLevel2,
-      "CoralScoringLevel3": CoralScoringLevel3,
-      "CoralScoringLevel4": CoralScoringLevel4,
-      "AlgaeScoringBarge": AlgaeScoringBarge,
-      "AlgaeScoringProcessor": AlgaeScoringProcessor,
-      "AlgaePickUp": AlgaePickUp,
+      "TotalShootingTime1": TotalShootingTime1,
+      "TotalShootingTimeA1": TotalShootingTimeA1,
+      "TotalShootingTimeA2": TotalShootingTimeA2,
+      "TotalShootingTimeI1": TotalShootingTimeI1,
+      "TotalShootingTimeI2": TotalShootingTimeI2,
+      "TotalAmount1": TotalAmount1,
+      "TotalAmountA1": TotalAmountA1,
+      "TotalAmountA2": TotalAmountA2,
+      "TotalAmountI1": TotalAmountI1,
+      "TotalAmountI2": TotalAmountI2,
+      "TripAmount1": TripAmount1,
       "Defense": Defense,
+      "DefenseA1": DefenseA1,
+      "DefenseA2": DefenseA2,
+      "DefenseI1": DefenseI1,
+      "DefenseI2": DefenseI2,
+      "NeutralTips": NeutralTrips,
+      "NeutralTipsA1": NeutralTripsA1,
+      "NeutralTipsA2": NeutralTripsA2,
+      "NeutralTipsI1": NeutralTripsI1,
+      "NeutralTipsI2": NeutralTripsI2,
+      "FeedToHPStation": FeedToHPStation,
+      "FeedToHPStationA1": FeedToHPStationA1,
+      "FeedToHPStationA2": FeedToHPStationA2,
+      "FeedToHPStationI1": FeedToHPStationI1,
+      "FeedToHPStationI2": FeedToHPStationI2,
+      "passing": passing,
+      "passingA1": passingA1,
+      "passingA2": passingA2,
+      "passingI1": passingI1,
+      "passingI2": passingI2,
     };
   }
 
   String toCsv() {
-    return '${CoralScoringLevel1},${CoralScoringLevel2},${CoralScoringLevel3},${CoralScoringLevel4},${AlgaeScoringBarge},${AlgaeScoringProcessor},${AlgaePickUp},${Defense}';
+    return '${TotalShootingTime1},${TotalShootingTimeA1},${TotalShootingTimeA2},${TotalShootingTimeI1},${TotalShootingTimeI2},${TotalAmount1}, ${TotalAmountA1}, ${TotalAmountA2}, ${TotalAmountI1}, ${TotalAmountI2}, ${TripAmount1}, ${NeutralTrips}, ${NeutralTripsA1}, ${NeutralTripsA2}, ${NeutralTripsI1}, ${NeutralTripsI2}, ${Defense} ${DefenseA1} ${DefenseA2} ${DefenseI1} ${DefenseI2}, ${FeedToHPStation} ${FeedToHPStationA1} ${FeedToHPStationA2} ${FeedToHPStationI1} ${FeedToHPStationI2}, ${passing} ${passingA1} ${passingA2} ${passingI1} ${passingI2}';
   }
 
   static TeleOpPoints fromJson(Map<String, dynamic> json) {
     return TeleOpPoints(
-      json['CoralScoringLevel1'] ?? 0,
-      json['CoralScoringLevel2'] ?? 0,
-      json['CoralScoringLevel3'] ?? 0,
-      json['CoralScoringLevel4'] ?? 0,
-      json['AlgaeScoringBarge'] ?? 0,
-      json['AlgaeScoringProcessor'] ?? 0,
-      json['AlgaePickUp'] ?? 0,
-      json['Defense'] ?? 0,
+      (json['TotalShootingTime1'] ?? json['TotalShootingTime'] ?? 0).toDouble(),
+      (json['TotalShootingTimeA1'] ?? 0).toDouble(),
+      (json['TotalShootingTimeA2'] ?? 0).toDouble(),
+      (json['TotalShootingTimeI1'] ?? 0).toDouble(),
+      (json['TotalShootingTimeI2'] ?? 0).toDouble(),
+      json['TotalAmount1'] ?? 0,
+      json['TotalAmountA1'] ?? 0,
+      json['TotalAmountA2'] ?? 0,
+      json['TotalAmountI1'] ?? 0,
+      json['TotalAmountI2'] ?? 0,
+      json['TripAmount1'] ?? 0,
+      json['Defense'] ?? false,
+      json['DefenseA1'] ?? false,
+      json['DefenseA2'] ?? false,
+      json['DefenseI1'] ?? false,
+      json['DefenseI2'] ?? false,
+      json['NeutralTrips'] ?? json['NeutralTips'] ?? 0,
+      json['NeutralTripsA1'] ?? json['NeutralTipsA1'] ?? 0,
+      json['NeutralTripsA2'] ?? json['NeutralTipsA2'] ?? 0,
+      json['NeutralTripsI1'] ?? json['NeutralTipsI1'] ?? 0,
+      json['NeutralTripsI2'] ?? json['NeutralTipsI2'] ?? 0,
+      json['FeedToHPStation'] ?? false,
+      json['FeedToHPStationA1'] ?? false,
+      json['FeedToHPStationA2'] ?? false,
+      json['FeedToHPStationI1'] ?? false,
+      json['FeedToHPStationI2'] ?? false,
+      json['passing'] ?? false,
+      json['passingA1'] ?? false,
+      json['passingA2'] ?? false,
+      json['passingI1'] ?? false,
+      json['passingI2'] ?? false,
     );
   }
 
   @override
   String toString() {
-    return 'TeleOpPoints{CoralScoringLevel1: $CoralScoringLevel1, CoralScoringLevel2: $CoralScoringLevel2, CoralScoringLevel3: $CoralScoringLevel3, CoralScoringLevel4: $CoralScoringLevel4, AlgaeScoringBarge: $AlgaeScoringBarge, AlgaeScoringProcessor: $AlgaeScoringProcessor, Defense: $Defense}';
+    return 'TeleOpPoints{TotalShootingTime1: $TotalShootingTime1, TotalShootingTimeA1: $TotalShootingTimeA1, TotalShootingTimeA2: $TotalShootingTimeA2, TotalShootingTimeI1: $TotalShootingTimeI1, TotalShootingTimeI2: $TotalShootingTimeI2, TotalAmount1 $TotalAmount1, TotalAmountA1 $TotalAmountA1, TotalAmountA2 $TotalAmountA2, TotalAmountI1 $TotalAmountI1, TotalAmountI2 $TotalAmountI2, TripAmount1 $TripAmount1, NeutralTips $NeutralTrips, NeutralTipsA1 $NeutralTripsA1, NeutralTipsA2 $NeutralTripsA2, NeutralTipsI1 $NeutralTripsI1, NeutralTipsI2 $NeutralTripsI2, Defense: $Defense DefenseA1: $DefenseA1, DefenseA2: $DefenseA2, DefenseI1: $DefenseI1, DefenseI2: $DefenseI2, FeedToHPStation: $FeedToHPStation FeedToHPStationA1: $FeedToHPStationA1, FeedToHPStationA2: $FeedToHPStationA2 FeedToHPStationI1: $FeedToHPStationI1, FeedToHPStationI2: $FeedToHPStationI2, passing: $passing, passingA1: $passingA1, passingA2: $passingA2, passingI1: $passingI1 passingI2: $passingI2}';
   }
 
-  setCoralScoringL1(int value) {
-    CoralScoringLevel1 = value;
+  setTotalShootingTime1(double value) {
+    TotalShootingTime1 = value;
   }
 
-  setCoralScoringL2(int value) {
-    CoralScoringLevel2 = value;
+  setTotalShootingTimeA1(double value) {
+    TotalShootingTimeA1 = value;
   }
 
-  setCoralScoringL3(int value) {
-    CoralScoringLevel3 = value;
+  setTotalShootingTimeA2(double value) {
+    TotalShootingTimeA2 = value;
   }
 
-  setCoralScoringL4(int value) {
-    CoralScoringLevel4 = value;
+  setTotalShootingTimeI1(double value) {
+    TotalShootingTimeI1 = value;
   }
 
-  setAlgaeScoringProcessor(int value) {
-    AlgaeScoringProcessor = value;
+  setTotalShootingTimeI2(double value) {
+    TotalShootingTimeI2 = value;
   }
 
-  setAlgaeScoringBarge(int value) {
-    AlgaeScoringBarge = value;
+  setTotalAmount1(int value) {
+    TotalAmount1 = value;
+  }
+
+  setTotalAmountA1(int value) {
+    TotalAmountA1 = value;
+  }
+
+  setTotalAmountA2(int value) {
+    TotalAmountA2 = value;
+  }
+
+  setTotalAmountI1(int value) {
+    TotalAmountI1 = value;
+  }
+
+  setTotalAmountI2(int value) {
+    TotalAmountI2 = value;
+  }
+
+  setTripAmount1(int value) {
+    TripAmount1 = value;
+  }
+
+  setNeutralTrips(int value) {
+    NeutralTrips = value;
+  }
+
+  setNeutralTripsA1(int value) {
+    NeutralTripsA1 = value;
+  }
+
+  setNeutralTripsA2(int value) {
+    NeutralTripsA2 = value;
+  }
+
+  setNeutralTripsI1(int value) {
+    NeutralTripsI1 = value;
+  }
+
+  setNeutralTripsI2(int value) {
+    NeutralTripsI2 = value;
   }
 
   setDefense(bool value) {
     Defense = value;
   }
+
+  setDefenseA1(bool value) {
+    DefenseA1 = value;
+  }
+
+  setDefenseA2(bool value) {
+    DefenseA2 = value;
+  }
+
+  setDefenseI1(bool value) {
+    DefenseI1 = value;
+  }
+
+  setDefenseI2(bool value) {
+    DefenseI2 = value;
+  }
+
+  setFeedToHPStation(bool value) {
+    FeedToHPStation = value;
+  }
+
+  setFeedToHPStationA1(bool value) {
+    FeedToHPStationA1 = value;
+  }
+
+  setFeedToHPStationA2(bool value) {
+    FeedToHPStationA2 = value;
+  }
+
+  setFeedToHPStationI1(bool value) {
+    FeedToHPStationI1 = value;
+  }
+
+  setFeedToHPStationI2(bool value) {
+    FeedToHPStationI2 = value;
+  }
+
+  setPassing(bool value) {
+    passing = value;
+  }
+
+  setPassingA1(bool value) {
+    passingA1 = value;
+  }
+
+  setPassingA2(bool value) {
+    passingA2 = value;
+  }
+
+  setPassingI1(bool value) {
+    passingI1 = value;
+  }
+
+  setPassingI2(bool value) {
+    passingI2 = value;
+  }
 }
 
 // EndPoints
 class EndPoints {
-  bool Deep_Climb = false;
-  bool Shallow_Climb = false;
+  // 0 = None, 1-9 = Level IDs (L/M/R for Levels 1-3)
+  int ClimbStatus = 0;
   bool Park = false;
+  bool FeedToHP = false;
+  bool Passing = false;
+  double endgameTime;
+  int endgameActions;
   String Comments = '';
+  List<int> drawingData = [];
 
   EndPoints(
-    this.Deep_Climb,
-    this.Shallow_Climb,
+    this.ClimbStatus,
     this.Park,
+    this.FeedToHP,
+    this.Passing,
     this.Comments,
+    this.endgameTime,
+    this.endgameActions,
+    this.drawingData,
   );
 
   Map<String, dynamic> toJson() {
     return {
-      "Deep_Climb": Deep_Climb,
-      "Shallow_Climb": Shallow_Climb,
+      "ClimbStatus": ClimbStatus,
       "Park": Park,
+      "FeedToHP": FeedToHP,
+      "Passing": Passing,
+      "endgameTime": endgameTime,
+      "endgameActions": endgameActions,
       "Comments": Comments,
+      "DrawingData": drawingData,
     };
   }
 
   static EndPoints fromJson(Map<String, dynamic> json) {
     return EndPoints(
-      json['Deep_Climb'] ?? 0,
-      json['Shallow_Climb'] ?? 0,
-      json['Park'] ?? 0,
-      json['Comments'] ?? 0,
+      json['ClimbStatus'] ?? 0,
+      json['Park'] ?? false,
+      json['FeedToHP'] ?? false,
+      json['Passing'] ?? false,
+      json['Comments'] ?? '',
+      (json['endgameTime'] ?? 0.0).toDouble(),
+      json['endgameActions'] ?? 0,
+      // Handle both list and legacy string/migration
+      (json['DrawingData'] is List) ? List<int>.from(json['DrawingData']) : [],
     );
   }
 
   @override
   String toString() {
-    return 'EndPoints{Deep_Climb: $Deep_Climb, Shallow_Climb: $Shallow_Climb, Park: $Park, Comments: $Comments}';
+    return 'EndPoints{ClimbStatus: $ClimbStatus, Park: $Park, FeedToHP: $FeedToHP, Passing: $Passing, endgameTime: $endgameTime, endgameActions: $endgameActions, Comments: $Comments, DrawingData: $drawingData}';
   }
 
   String toCsv() {
-    return '$Deep_Climb,$Shallow_Climb,$Park,$Comments';
+    return '$ClimbStatus,$Park,$FeedToHP,$Passing,$endgameTime,$endgameActions,$Comments,${_encodeDrawingData()}';
+  }
+
+  String _encodeDrawingData() {
+    return DrawingBitmaskCodec.encode(drawingData);
   }
 
   @override
@@ -850,30 +1104,77 @@ class EndPoints {
     if (identical(this, other)) return true;
 
     return other is EndPoints &&
-        other.Deep_Climb == Deep_Climb &&
-        other.Shallow_Climb == Shallow_Climb &&
+        other.ClimbStatus == ClimbStatus &&
         other.Park == Park &&
+        other.FeedToHP == FeedToHP &&
+        other.Passing == Passing &&
         other.Comments == Comments;
   }
 
   @override
   int get hashCode {
-    return Deep_Climb.hashCode ^
-        Shallow_Climb.hashCode ^
+    return ClimbStatus.hashCode ^
         Park.hashCode ^
+        FeedToHP.hashCode ^
+        Passing.hashCode ^
         Comments.hashCode;
   }
 
-  setDeepClimb(bool value) {
-    Deep_Climb = value;
-  }
-
-  setShallowClimb(bool value) {
-    Shallow_Climb = value;
+  setClimbStatus(int value) {
+    ClimbStatus = value;
   }
 
   setPark(bool value) {
     Park = value;
+  }
+
+  setFeedToHP(bool value) {
+    FeedToHP = value;
+  }
+
+  setPassing(bool value) {
+    Passing = value;
+  }
+}
+
+class DrawingBitmaskCodec {
+  static const int _rows = 33;
+  static const int _cols = 58;
+  static const int _totalCells = _rows * _cols; // 1914
+
+  static String encode(List<int> ids) {
+    if (ids.isEmpty) return '';
+
+    int byteLength = (_totalCells + 7) >> 3;
+    Uint8List bytes = Uint8List(byteLength);
+
+    for (final id in ids) {
+      if (id < 1 || id > _totalCells) continue;
+      int index = id - 1;
+      int byteIndex = index >> 3;
+      int bitIndex = index & 7;
+      bytes[byteIndex] |= (1 << bitIndex);
+    }
+
+    return base64Url.encode(bytes);
+  }
+
+  static List<int> decode(String encoded) {
+    if (encoded.isEmpty) return [];
+    Uint8List bytes = base64Url.decode(encoded);
+    List<int> ids = [];
+
+    int maxBits = _totalCells;
+    for (int index = 0; index < maxBits; index++) {
+      int byteIndex = index >> 3;
+      int bitIndex = index & 7;
+      if (byteIndex >= bytes.length) break;
+      if ((bytes[byteIndex] & (1 << bitIndex)) != 0) {
+        ids.add(index + 1);
+      }
+    }
+
+    return ids;
   }
 }
 
@@ -920,51 +1221,88 @@ class LocalDataBase {
   // Helper conversion methods
   static AutonPoints mapToAutonPoints(Map<dynamic, dynamic> data) {
     return AutonPoints(
-        data['CoralScoringLevel1'] ?? 0,
-        data['CoralScoringLevel2'] ?? 0,
-        data['CoralScoringLevel3'] ?? 0,
-        data['CoralScoringLevel4'] ?? 0,
-        data['LeftBarge'] ?? false,
-        data['AlgaeScoringProcessor'] ?? 0,
-        data['AlgaeScoringBarge'] ?? 0,
-        data['RobotLocation'] ?? Offset.zero);
+      data['FuelPickUpFromDepot'] ?? false,
+      data['FuelPickUpFromOutpost'] ?? false,
+      data['FuelPickUpFromNeutralZone'] ?? false,
+      data['TotalShootingTime'] ?? 0,
+      data['aMOUNT OF SHOOTING'] ?? 0,
+      data['Climb'] ?? false,
+      data['WinAfterAuton'] ?? "",
+      BotLocation.fromJson(
+        data['RobotLocation'] ??
+            {
+              'position': {'x': 0.0, 'y': 0.0},
+              'size': {'width': 0.0, 'height': 0.0},
+              'angle': 0.0
+            },
+      ),
+      true, // LeftStartingPosition, assuming default true or fetched differently if needed
+    );
   }
 
-  static TeleOpPoints mapToTeleOpPoints(Map<dynamic, dynamic> data) {
+  static TeleOpPoints fromJson(Map<String, dynamic> json) {
     return TeleOpPoints(
-      data['CoralScoringLevel1'] ?? 0,
-      data['CoralScoringLevel2'] ?? 0,
-      data['CoralScoringLevel3'] ?? 0,
-      data['CoralScoringLevel4'] ?? 0,
-      data['AlgaeScoringProcessor'] ?? 0,
-      data['AlgaeScoringBarge'] ?? 0,
-      data['AlgaePickUp'] ?? 0,
-      data['Defended'] ?? false,
-    );
+        (json['TotalShootingTime1'] ?? json['TotalShootingTime'] ?? 0)
+            .toDouble(),
+        (json['TotalShootingTimeA1'] ?? 0).toDouble(),
+        (json['TotalShootingTimeA2'] ?? 0).toDouble(),
+        (json['TotalShootingTimeI1'] ?? 0).toDouble(),
+        (json['TotalShootingTimeI2'] ?? 0).toDouble(),
+        json['TotalAmount1'] ?? 0,
+        json['TotalAmountA1'] ?? 0,
+        json['TotalAmountA2'] ?? 0,
+        json['TotalAmountI1'] ?? 0,
+        json['TotalAmountI2'] ?? 0,
+        json['TripAmount1'] ?? 0,
+        json['Defense'] ?? false,
+        json['DefenseA1'] ?? false,
+        json['DefenseA2'] ?? false,
+        json['DefenseI1'] ?? false,
+        json['DefenseI2'] ?? false,
+        json['NeutralTrips'] ?? 0,
+        json['NeutralTripsA1'] ?? 0,
+        json['NeutralTripsA2'] ?? 0,
+        json['NeutralTripsI1'] ?? 0,
+        json['NeutralTripsI2'] ?? 0,
+        json['FeedToHPStation'] ?? false,
+        json['FeedToHPStationA1'] ?? false,
+        json['FeedToHPStationA2'] ?? false,
+        json['FeedToHPStationI1'] ?? false,
+        json['FeedToHPStationI2'] ?? false,
+        json['passing'] ?? false,
+        json['passingA1'] ?? false,
+        json['passingA2'] ?? false,
+        json['passingI1'] ?? false,
+        json['passingI2'] ?? false);
   }
 
   static EndPoints mapToEndPoints(Map<dynamic, dynamic> data) {
     return EndPoints(
-      data['TrapScored'] ?? 0,
-      data['SpotlightLevel'] ?? 0,
-      data['Harmonize'] ?? false,
+      data['ClimbStatus'] ?? 0,
       data['Park'] ?? false,
+      data['FeedToHP'] ?? false,
+      data['Passing'] ?? false,
+      data['Comments'] ?? "",
+      (data['EndgameTime'] ?? 0).toDouble(),
+      data['EndgameActions'] ?? 0,
+      (data['DrawingData'] is List) ? List<int>.from(data['DrawingData']) : [],
     );
   }
 
   static PitRecord mapToPitRecord(Map<dynamic, dynamic> data) {
     return PitRecord(
-      teamNumber: data['teamNumber'] ?? 0,
-      eventKey: data['eventKey'] ?? "",
-      scouterName: data['scouterName'] ?? "",
-      driveTrainType: data['driveTrainType'] ?? "",
-      autonType: data['auton'] ?? "",
-      intake: data['intake'] ?? "",
-      scoreObject: List<String>.from(data['scoreObject'] ?? []),
-      climbType: List<String>.from(data['climbType'] ?? []),
-      scoreType: List<String>.from(data['scoreType'] ?? []),
-      imageblob: data['imageblob'] ?? "",
-    );
+        teamNumber: data['teamNumber'] ?? 0,
+        eventKey: data['eventKey'] ?? "",
+        scouterName: data['scouterName'] ?? "",
+        driveTrainType: data['driveTrainType'] ?? "",
+        autonType: data['auton'] ?? "",
+        intake: data['intake'] ?? "",
+        scoreObject: List<String>.from(data['scoreObject'] ?? []),
+        climbType: List<String>.from(data['climbType'] ?? []),
+        scoreType: List<String>.from(data['scoreType'] ?? []),
+        botImage1: data['botImage1'] ?? "",
+        botImage2: data['botImage2'] ?? "",
+        botImage3: data['botImage3'] ?? "");
   }
 }
 
@@ -992,7 +1330,479 @@ class BotLocation {
   }
 
   String toCsv() {
-    return "null";
-    return '${position.dx},${position.dy},${size.width},${size.height},$angle';
+    return '${position.dx.toStringAsFixed(1)},${position.dy.toStringAsFixed(1)},${size.width.toStringAsFixed(1)},${size.height.toStringAsFixed(1)},${angle.toStringAsFixed(1)}';
+  }
+}
+
+class PitChecklistItem {
+  String note = "";
+  String matchkey = "";
+  bool chassis_drive_motors = false;
+  bool chassis_steer_motors = false;
+  bool chassis_gearboxes = false;
+  bool chassis_tread_conditions = false;
+  bool chassis_wires = false;
+  bool chassis_bumpers = false;
+  bool chassis_camera = false;
+  bool chassis_limelight_protectors = false;
+
+  bool ethernet_front_left_limelight = false;
+  bool ethernet_front_right_limelight = false;
+  bool ethernet_back_right_limelight = false;
+  bool ethernet_switch = false; // Changed from ethernet_swtich
+  bool ethernet_radio = false;
+
+  bool climber_bumper = false;
+  bool climber_hooks = false;
+  bool climber_string = false;
+  bool climber_springs = false;
+  bool climber_gearbox = false;
+  bool climber_motors = false;
+  bool climber_wires = false;
+  bool climber_nuts_and_bolts = false;
+  bool climber_reset = false;
+  bool climber_clips = false;
+
+  bool elevator_rod_of_doom = false;
+  bool elevator_stage_0 = false;
+  bool elevator_stage_1 = false;
+  bool elevator_stage_2 = false;
+  bool elevator_chain = false;
+  bool elevator_gearbox = false;
+  bool elevator_limit_switch = false;
+  bool elevator_motors = false;
+  bool elevator_wires = false;
+  bool elevator_nuts_and_bolts = false;
+  bool elevator_belts = false;
+  bool elevator_string = false;
+
+  bool trapdoor_panels = false;
+  bool trapdoor_supports = false;
+  bool trapdoor_hinges = false;
+  bool trapdoor_tensioners = false;
+  bool trapdoor_wires = false;
+  bool trapdoor_nuts_and_bolts = false;
+  bool trapdoor_reset = false;
+
+  bool carriage_gearbox = false;
+  bool carriage_beltbox = false;
+  bool carriage_motors = false;
+  bool carriage_wires = false;
+  bool carriage_nuts_and_bolts = false;
+  bool carriage_coral_slide = false;
+  bool carriage_reset = false;
+  bool carriage_carriage = false;
+
+  bool gooseneck_panels = false;
+  bool gooseneck_wheels = false;
+  bool gooseneck_belts = false;
+  bool gooseneck_nuts_and_bolts = false;
+  bool gooseneck_gears = false;
+  bool gooseneck_wires = false;
+
+  double returning_battery_voltage = 0.0;
+  double returning_battery_cca = 0.0;
+  double returning_number = 0.0;
+  double outgoing_battery_voltage = 0.0;
+  double outgoing_battery_cca = 0.0;
+  double outgoing_number = 0.0;
+  bool outgoing_battery_replaced = false;
+  String alliance_color = "Blue";
+  Map<String, dynamic>? alliance_selection_data;
+  String img1 = "";
+  String img2 = "";
+  String img3 = "";
+  String img4 = "";
+  String img5 = "";
+
+  PitChecklistItem({
+    required this.matchkey,
+    required this.chassis_drive_motors,
+    required this.chassis_steer_motors,
+    required this.chassis_gearboxes,
+    required this.chassis_tread_conditions,
+    required this.chassis_camera,
+    required this.chassis_wires,
+    required this.chassis_bumpers,
+    required this.chassis_limelight_protectors,
+    required this.ethernet_front_left_limelight,
+    required this.ethernet_front_right_limelight,
+    required this.ethernet_back_right_limelight,
+    required this.ethernet_switch, // Changed from ethernet_swtich
+    required this.ethernet_radio,
+    required this.climber_string,
+    required this.climber_bumper,
+    required this.climber_hooks,
+    required this.climber_clips,
+    required this.climber_springs,
+    required this.climber_gearbox,
+    required this.climber_motors,
+    required this.climber_wires,
+    required this.climber_nuts_and_bolts,
+    required this.climber_reset,
+    required this.elevator_rod_of_doom,
+    required this.elevator_stage_0,
+    required this.elevator_stage_1,
+    required this.elevator_stage_2,
+    required this.elevator_chain,
+    required this.elevator_gearbox,
+    required this.elevator_motors,
+    required this.elevator_limit_switch,
+    required this.elevator_wires,
+    required this.elevator_nuts_and_bolts,
+    required this.elevator_belts,
+    required this.elevator_string,
+    required this.trapdoor_panels,
+    required this.trapdoor_supports,
+    required this.trapdoor_hinges,
+    required this.trapdoor_tensioners,
+    required this.trapdoor_wires,
+    required this.trapdoor_nuts_and_bolts,
+    required this.trapdoor_reset,
+    required this.carriage_gearbox,
+    required this.carriage_beltbox,
+    required this.carriage_motors,
+    required this.carriage_wires,
+    required this.carriage_nuts_and_bolts,
+    required this.carriage_coral_slide,
+    required this.carriage_reset,
+    required this.carriage_carriage,
+    required this.gooseneck_panels,
+    required this.gooseneck_wheels,
+    required this.gooseneck_belts,
+    required this.gooseneck_nuts_and_bolts,
+    required this.gooseneck_gears,
+    required this.gooseneck_wires,
+    required this.returning_battery_voltage,
+    required this.returning_battery_cca,
+    required this.returning_number,
+    required this.outgoing_battery_voltage,
+    required this.outgoing_battery_cca,
+    required this.outgoing_number,
+    required this.outgoing_battery_replaced,
+    required this.img1,
+    required this.img2,
+    required this.img3,
+    required this.img4,
+    required this.img5,
+    required this.alliance_color,
+    required this.note,
+    this.alliance_selection_data,
+  });
+
+  PitChecklistItem.defaultConstructor(String matchkey) {
+    this.matchkey = matchkey;
+  }
+
+  String to_Csv() {
+    return '$matchkey,'
+        '$chassis_drive_motors, $chassis_camera, $chassis_steer_motors,$chassis_gearboxes,$chassis_tread_conditions,$chassis_wires,$chassis_bumpers,$chassis_limelight_protectors,'
+        '$ethernet_front_left_limelight,$ethernet_front_right_limelight,$ethernet_switch,$ethernet_radio,' // Changed from ethernet_swtich
+        '$climber_string,$climber_springs,$climber_gearbox,$climber_motors,$climber_wires,$climber_nuts_and_bolts,$climber_bumper,$climber_reset,$climber_bumper,$climber_clips,'
+        '$elevator_rod_of_doom,$elevator_limit_switch,$elevator_belts,$elevator_stage_0,$elevator_stage_1,$elevator_stage_2,$elevator_chain,$elevator_gearbox, $elevator_string,$elevator_motors,$elevator_wires,$elevator_nuts_and_bolts,'
+        '$trapdoor_panels,$trapdoor_supports,$trapdoor_hinges,$trapdoor_tensioners,$trapdoor_nuts_and_bolts,$trapdoor_reset,$trapdoor_wires,'
+        '$carriage_gearbox,$carriage_beltbox,$carriage_motors,$carriage_wires,$carriage_nuts_and_bolts,$carriage_coral_slide,$carriage_carriage,'
+        '$gooseneck_panels,$gooseneck_wheels,$gooseneck_belts,$gooseneck_nuts_and_bolts,'
+        '$returning_battery_voltage,$returning_battery_cca,$returning_number,'
+        '$outgoing_battery_voltage,$outgoing_battery_cca,$outgoing_number,$outgoing_battery_replaced,'
+        '$alliance_color';
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'matchkey': matchkey,
+      'chassis_drive_motors': chassis_drive_motors,
+      'chassis_steer_motors': chassis_steer_motors,
+      'chassis_gearboxes': chassis_gearboxes,
+      'chassis_tread_conditions': chassis_tread_conditions,
+      'chassis_wires': chassis_wires,
+      'chassis_camera': chassis_camera,
+      'chassis_bumpers': chassis_bumpers,
+      'chassis_limelight_protectors': chassis_limelight_protectors,
+      'ethernet_front_left_limelight': ethernet_front_left_limelight,
+      'ethernet_front_right_limelight': ethernet_front_right_limelight,
+      'ethernet_back_right_limelight': ethernet_back_right_limelight,
+      'ethernet_switch': ethernet_switch, // Changed from ethernet_swtich
+      'ethernet_radio': ethernet_radio,
+      'climber_string': climber_string,
+      'climber_clips': climber_clips,
+      'climber_springs': climber_springs,
+      'climber_hooks': climber_hooks,
+      'climber_gearbox': climber_gearbox,
+      'climber_motors': climber_motors,
+      'climber_wires': climber_wires,
+      'climber_nuts_and_bolts': climber_nuts_and_bolts,
+      'climber_reset': climber_reset,
+      'climber_bumper': climber_bumper,
+      'elevator_rod_of_doom': elevator_rod_of_doom,
+      'elevator_stage_0': elevator_stage_0,
+      'elevator_stage_1': elevator_stage_1,
+      'elevator_belts': elevator_belts,
+      'elevator_stage_2': elevator_stage_2,
+      'elevator_chain': elevator_chain,
+      'elevator_gearbox': elevator_gearbox,
+      'elevator_motors': elevator_motors,
+      'elevator_limit_switch': elevator_limit_switch,
+      'elevator_string': elevator_string,
+      'elevator_wires': elevator_wires,
+      'elevator_nuts_and_bolts': elevator_nuts_and_bolts,
+      'trapdoor_panels': trapdoor_panels,
+      'trapdoor_wires': trapdoor_wires,
+      'trapdoor_supports': trapdoor_supports,
+      'trapdoor_hinges': trapdoor_hinges,
+      'trapdoor_tensioners': trapdoor_tensioners,
+      'trapdoor_nuts_and_bolts': trapdoor_nuts_and_bolts,
+      'trapdoor_reset': trapdoor_reset,
+      'carriage_gearbox': carriage_gearbox,
+      'carriage_beltbox': carriage_beltbox,
+      'carriage_motors': carriage_motors,
+      'carriage_wires': carriage_wires,
+      'carriage_nuts_and_bolts': carriage_nuts_and_bolts,
+      'carriage_coral_slide': carriage_coral_slide,
+      'carriage_reset': carriage_reset,
+      'carriage_carriage': carriage_carriage,
+      'gooseneck_panels': gooseneck_panels,
+      'gooseneck_wheels': gooseneck_wheels,
+      'gooseneck_belts': gooseneck_belts,
+      'gooseneck_wires': gooseneck_wires,
+      'gooseneck_nuts_and_bolts': gooseneck_nuts_and_bolts,
+      'gooseneck_gears': gooseneck_gears,
+      'returning_battery_voltage': returning_battery_voltage,
+      'returning_battery_cca': returning_battery_cca,
+      'returning_number': returning_number,
+      'outgoing_battery_voltage': outgoing_battery_voltage,
+      'outgoing_battery_cca': outgoing_battery_cca,
+      'outgoing_number': outgoing_number,
+      'outgoing_battery_replaced': outgoing_battery_replaced,
+      'alliance_color': alliance_color,
+      'note': note,
+      'alliance_selection_data': alliance_selection_data,
+      'img1': img1,
+      'img2': img2,
+      'img3': img3,
+      'img4': img4,
+      'img5': img5,
+    };
+  }
+
+  factory PitChecklistItem.fromJson(Map<String, dynamic> json) =>
+      PitChecklistItem(
+        note: json['note'] ?? "",
+        matchkey: json['matchkey'] ?? " ",
+        gooseneck_wires: json['gooseneck_wires'] ?? false,
+        chassis_drive_motors: json['chassis_drive_motors'] ?? false,
+        chassis_steer_motors: json['chassis_steer_motors'] ?? false,
+        chassis_gearboxes: json['chassis_gearboxes'] ?? false,
+        chassis_tread_conditions: json['chassis_tread_conditions'] ?? false,
+        chassis_wires: json['chassis_wires'] ?? false,
+        chassis_camera: json['chassi_camera'] ?? false,
+        chassis_bumpers: json['chassis_bumpers'] ?? false,
+        chassis_limelight_protectors:
+            json['chassis_limelight_protectors'] ?? false,
+        ethernet_front_left_limelight:
+            json['ethernet_front_left_limelight'] ?? false,
+        ethernet_front_right_limelight:
+            json['ethernet_front_right_limelight'] ?? false,
+        ethernet_back_right_limelight:
+            json['ethernet_back_right_limelight'] ?? false,
+        ethernet_radio: json['ethernet_radio'] ?? false,
+        climber_hooks: json['climber_hooks'] ?? false,
+        carriage_reset: json['carriage_reset'] ?? false,
+        climber_wires: json['climber_wires'] ?? false,
+        climber_clips: json['climber_clips'] ?? false,
+        climber_bumper: json['climber_bumper'] ?? false,
+        climber_string: json['climber_string'] ?? false,
+        climber_springs: json['climber_springs'] ?? false,
+        climber_gearbox: json['climber_gearbox'] ?? false,
+        climber_motors: json['climber_motors'] ?? false,
+        climber_nuts_and_bolts: json['climber_nuts_and_bolts'] ?? false,
+        climber_reset: json['climber_reset'] ?? false,
+        elevator_rod_of_doom: json['elevator_rod_of_doom'] ?? false,
+        elevator_belts: json['elevator_belts'] ?? false,
+        elevator_stage_0: json['elevator_stage_0'] ?? false,
+        elevator_stage_1: json['elevator_stage_1'] ?? false,
+        elevator_stage_2: json['elevator_stage_2'] ?? false,
+        elevator_chain: json['elevator_chain'] ?? false,
+        elevator_gearbox: json['elevator_gearbox'] ?? false,
+        elevator_motors: json['elevator_motors'] ?? false,
+        elevator_limit_switch: json['elevator_limit_switch'] ?? false,
+        elevator_string: json['elevator_string'] ?? false,
+        elevator_wires: json['elevator_wires'] ?? false,
+        elevator_nuts_and_bolts: json['elevator_nuts_and_bolts'] ?? false,
+        trapdoor_panels: json['trapdoor_panels'] ?? false,
+        trapdoor_wires: json['trapdoor_wires'] ?? false,
+        trapdoor_supports: json['trapdoor_supports'] ?? false,
+        trapdoor_hinges: json['trapdoor_hinges'] ?? false,
+        trapdoor_tensioners: json['trapdoor_tensioners'] ?? false,
+        trapdoor_nuts_and_bolts: json['trapdoor_nuts_and_bolts'] ?? false,
+        trapdoor_reset: json['trapdoor_reset'] ?? false,
+        carriage_gearbox: json['carriage_gearbox'] ?? false,
+        carriage_beltbox: json['carriage_beltbox'] ?? false,
+        carriage_motors: json['carriage_motors'] ?? false,
+        carriage_wires: json['carriage_wires'] ?? false,
+        carriage_nuts_and_bolts: json['carriage_nuts_and_bolts'] ?? false,
+        carriage_coral_slide: json['carriage_coral_slide'] ?? false,
+        carriage_carriage: json['carriage_carriage'] ?? false,
+        gooseneck_panels: json['gooseneck_panels'] ?? false,
+        gooseneck_gears: json['gooseneck_gears'] ?? false,
+        gooseneck_wheels: json['gooseneck_wheels'] ?? false,
+        gooseneck_belts: json['gooseneck_belts'] ?? false,
+        gooseneck_nuts_and_bolts: json['gooseneck_nuts_and_bolts'] ?? false,
+        returning_battery_voltage:
+            (json['returning_battery_voltage'] ?? 0.0).toDouble(),
+        returning_battery_cca:
+            (json['returning_battery_cca'] ?? 0.0).toDouble(),
+        returning_number: (json['returning_number'] ?? 0.0).toDouble(),
+        outgoing_battery_voltage:
+            (json['outgoing_battery_voltage'] ?? 0.0).toDouble(),
+        outgoing_battery_cca: (json['outgoing_battery_cca'] ?? 0.0).toDouble(),
+        outgoing_number: (json['outgoing_number'] ?? 0.0).toDouble(),
+        outgoing_battery_replaced: json['outgoing_battery_replaced'] ?? false,
+        img1: json['img1'] ?? "",
+        img2: json['img2'] ?? "",
+        img3: json['img3'] ?? "",
+        img4: json['img4'] ?? "",
+        img5: json['img5'] ?? "",
+        alliance_color: json['alliance_color'] ?? "",
+        alliance_selection_data: json['alliance_selection_data'],
+        ethernet_switch: json['ethernet_switch'] ?? false, // Corrected spelling
+      );
+}
+
+class PitCheckListDatabase {
+  static final Map<String, PitChecklistItem> _storage = {};
+
+  static void PutData(dynamic key, PitChecklistItem value) {
+    if (key == null) {
+      throw Exception('Key cannot be null');
+    }
+
+    // print(' Storing $key as $value');
+    _storage[key.toString()] = value;
+  }
+
+  static PitChecklistItem? GetData(dynamic key) {
+    // print('Retrieving $key as ${_storage[key]}');
+    if (_storage[key.toString()] == null) {
+      return null;
+    }
+
+    // Convert the stored data to a PitRecord object
+    var data = _storage[key.toString()];
+    if (data is PitChecklistItem) {
+      return data;
+    } else if (data is Map<String, dynamic>) {
+      // ignore: cast_from_null_always_fails
+      return PitChecklistItem.fromJson(data as Map<String, dynamic>);
+    }
+
+    return null;
+  }
+
+  static void DeleteData(String key) {
+    // print('Deleting $key');
+    _storage.remove(key);
+  }
+
+  static void ClearData() {
+    // print('Clearing all data');
+    Hive.box('pitcheck').put('data', null);
+    _storage.clear();
+  }
+
+  static void SaveAll() {
+    Hive.box('pitcheck').put('data', jsonEncode(_storage));
+  }
+
+  static void LoadAll() {
+    var dd = Hive.box('pitcheck').get('data');
+    if (dd != null) {
+      Map<String, dynamic> data = json.decode(dd);
+      data.forEach((key, value) {
+        _storage[key] = value is Map
+            ? PitChecklistItem.fromJson(value as Map<String, dynamic>)
+            : value;
+      });
+    }
+  }
+
+  static void PrintAll() {
+    log(_storage.toString());
+  }
+
+  static List<dynamic> GetRecorderTeam() {
+    // Change return type to List<dynamic>
+    List<dynamic> teams = [];
+    _storage.forEach((key, value) {
+      teams.add(value.matchkey);
+    });
+    return teams;
+  }
+
+  static dynamic Export() {
+    return _storage;
+  }
+
+  static void Import(Map<String, dynamic> data) {
+    data.forEach((key, value) {
+      _storage[key] = value is Map
+          ? PitChecklistItem.fromJson(value as Map<String, dynamic>)
+          : value;
+    });
+  }
+
+  static void ImportFromJson(String jsonString) {
+    Map<String, dynamic> data = json.decode(jsonString);
+    Import(data);
+  }
+
+  static String ExportAsJson() {
+    // Convert the internal storage to JSON string
+    Map<String, dynamic> exportData = {};
+
+    _storage.forEach((key, value) {
+      exportData[key] = value.toJson();
+    });
+
+    return jsonEncode(exportData);
+  }
+
+  static int GetStorageSize() {
+    return _storage.length;
+  }
+
+  static List<String> GetKeys() {
+    return _storage.keys.toList();
+  }
+
+  static Future<void> BackupToFile(String fileName) async {
+    try {
+      final String jsonData = ExportAsJson();
+      // Implementation would depend on file access method (would need to import dart:io)
+      // Example placeholder:
+      final file = File(fileName);
+      await file.writeAsString(jsonData);
+      log('Backup completed to: $fileName');
+    } catch (e) {
+      log('Error backing up data: $e');
+      throw Exception('Failed to backup data: $e');
+    }
+  }
+
+  static Future<bool> RestoreFromFile(String fileName) async {
+    try {
+      // Implementation would depend on file access method
+      // Example placeholder:
+      final file = File(fileName);
+      if (await file.exists()) {
+        final String jsonData = await file.readAsString();
+        ImportFromJson(jsonData);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      log('Error restoring data: $e');
+      return false;
+    }
   }
 }

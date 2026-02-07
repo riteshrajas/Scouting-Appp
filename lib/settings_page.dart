@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:scouting_app/main.dart';
 
 import 'services/DataBase.dart';
 import 'components/MatchSelection.dart';
@@ -28,7 +29,6 @@ class SettingsPageState extends State<SettingsPage> {
   bool isBluetoothGranted = false;
   bool isNearbyDevicesGranted = false;
   bool isCameraGranted = false;
-  bool isDarkMode = true;
   bool isLoading = false;
   bool isjson = true;
   TextEditingController eventKeyController = TextEditingController();
@@ -156,7 +156,23 @@ class SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       drawer: const NavBar(),
       appBar: AppBar(
+        leading: Builder(builder: (context) {
+          return IconButton(
+              icon: const Icon(Icons.menu),
+              color: !islightmode()
+                  ? const Color.fromARGB(193, 255, 255, 255)
+                  : const Color.fromARGB(105, 36, 33, 33),
+              onPressed: () => Scaffold.of(context).openDrawer());
+        }),
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+              icon: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode),
+              onPressed: () {
+                toggle();
+                Navigator.of(context).pop();
+              }),
+        ],
         title: ShaderMask(
             shaderCallback: (bounds) => const LinearGradient(
                   colors: [Colors.red, Colors.blue],
@@ -197,19 +213,32 @@ class SettingsPageState extends State<SettingsPage> {
                               .get('ApiKey', defaultValue: ''),
                         decoration: InputDecoration(
                           labelText: 'BlueAlliance API Key',
-                          labelStyle: GoogleFonts.museoModerno(fontSize: 15),
+                          labelStyle: GoogleFonts.museoModerno(
+                              fontSize: 15,
+                              color:
+                                  islightmode() ? Colors.black : Colors.white),
                           hintText: 'Enter your API Key',
-                          hintStyle: GoogleFonts.museoModerno(fontSize: 15),
+                          hintStyle: GoogleFonts.museoModerno(
+                              fontSize: 15,
+                              color:
+                                  islightmode() ? Colors.black : Colors.white),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.black),
+                            borderSide: BorderSide(
+                                color: islightmode()
+                                    ? Colors.black
+                                    : Colors.white),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.black),
+                            borderSide: BorderSide(
+                                color: islightmode()
+                                    ? Colors.black
+                                    : Colors.white),
                           ),
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.qr_code_scanner),
+                            color: islightmode() ? Colors.black : Colors.white,
                             onPressed: () async {
                               final qrCode = await Navigator.push(
                                 context,
@@ -228,7 +257,9 @@ class SettingsPageState extends State<SettingsPage> {
                             },
                           ),
                         ),
-                        style: GoogleFonts.museoModerno(fontSize: 18),
+                        style: GoogleFonts.museoModerno(
+                            fontSize: 18,
+                            color: islightmode() ? Colors.black : Colors.white),
                         onSubmitted: (String value) {
                           Hive.box('settings').put('ApiKey', value);
                           Settings.setApiKey(value);
@@ -236,17 +267,36 @@ class SettingsPageState extends State<SettingsPage> {
                       ),
                       SizedBox(height: 10),
                       TextField(
-                        controller: eventKeyController,
-                        onChanged: (String value) {
-                          Hive.box('userData').put('eventKey', value);
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Match Event Key (e.g. 2024isde4)',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                          controller: eventKeyController,
+                          onChanged: (String value) {
+                            Hive.box('userData').put('eventKey', value);
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Match Event Key (e.g. 2024isde4)',
+                            labelStyle: GoogleFonts.museoModerno(
+                                fontSize: 15,
+                                color: islightmode()
+                                    ? Colors.black
+                                    : Colors.white),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                  color: islightmode()
+                                      ? Colors.black
+                                      : Colors.white),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(
+                                  color: islightmode()
+                                      ? Colors.black
+                                      : Colors.white),
+                            ),
                           ),
-                        ),
-                      ),
+                          style: GoogleFonts.museoModerno(
+                              fontSize: 18,
+                              color:
+                                  islightmode() ? Colors.black : Colors.white)),
                     ],
                   ),
                 )
@@ -583,6 +633,9 @@ class SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ), // Load Match, Eject Match, Clear Data
+            SizedBox(
+              height: 30,
+            ),
           ],
         ),
       ),

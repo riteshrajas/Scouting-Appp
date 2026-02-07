@@ -237,7 +237,7 @@ Widget buildMap(
   Function(BotLocation)? onLocationChanged,
 }) {
   // If we have location callbacks, use the new interactive widget
-  if (onLocationChanged != null || botLocation != null) {
+  if (onLocationChanged != null) {
     return InteractiveMapMarker(
       botLocation: botLocation,
       allianceColor: allianceColor,

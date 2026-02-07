@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
 
+import '../main.dart';
+
 class MatchSelection extends StatefulWidget {
   final Function(String?) onAllianceSelected;
   final Function(String?) onPositionSelected;
@@ -31,12 +33,14 @@ class _MatchSelectionState extends State<MatchSelection> {
                   label: Center(
                     child: Text(
                       value,
-                      style: GoogleFonts.museoModerno(fontSize: 25),
+                      style: GoogleFonts.museoModerno(fontSize: 25, color: islightmode() ? const Color.fromARGB(188, 0, 0, 0) : const Color.fromARGB(225, 255, 255, 255)),
                     ),
                   ),
+                  backgroundColor: islightmode() ? const Color.fromARGB(225, 255, 255, 255) : const Color.fromARGB(188, 0, 0, 0),
+                  checkmarkColor: islightmode() ? const Color.fromARGB(188, 0, 0, 0) : const Color.fromARGB(225, 255, 255, 255),
                   selectedColor: value == "Red"
-                      ? const Color.fromARGB(255, 230, 75, 75)
-                      : const Color.fromARGB(147, 0, 122, 248),
+                      ? (islightmode() ? const Color.fromARGB(255, 230, 75, 75) : Color.fromARGB(255, 150, 27, 29))
+                      : (islightmode() ? const Color.fromARGB(147, 0, 122, 248) : Color.fromARGB(244, 22, 67, 134)),
                   selected: widget.initAlliance == value ? true : false,
                   side: const BorderSide(color: Colors.black),
                   onSelected: (bool selected) {
@@ -55,12 +59,14 @@ class _MatchSelectionState extends State<MatchSelection> {
                   label: Center(
                     child: Text(
                         ((Hive.box('userData').get('alliance') == "Red") ? "R" : "B") + value,
-                      style: GoogleFonts.museoModerno(fontSize: 25),
+                      style: GoogleFonts.museoModerno(fontSize: 25, color: islightmode() ? const Color.fromARGB(188, 0, 0, 0) : const Color.fromARGB(225, 255, 255, 255)),
                     ),
                   ),
+                  backgroundColor: islightmode() ? const Color.fromARGB(225, 255, 255, 255) : const Color.fromARGB(188, 0, 0, 0),
+                  checkmarkColor: islightmode() ? const Color.fromARGB(188, 0, 0, 0) : const Color.fromARGB(225, 255, 255, 255),
                   selectedColor: Hive.box('userData').get('alliance') == "Red"
-                      ? const Color.fromARGB(255, 230, 75, 75)
-                      : const Color.fromARGB(147, 0, 122, 248),
+                      ? (islightmode() ? const Color.fromARGB(255, 230, 75, 75) : Color.fromARGB(255, 150, 27, 29))
+                      : (islightmode() ? const Color.fromARGB(147, 0, 122, 248) : Color.fromARGB(244, 22, 67, 134)),
                   selected: widget.initPosition == value,
                   side: const BorderSide(color: Colors.black),
                   onSelected: (bool selected) {

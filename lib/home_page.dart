@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:scouting_app/Pit_Checklist/Pit_Checklist.dart';
 import 'package:scouting_app/Qualitative/qualitative.dart';
-
+import 'services/Colors.dart';
 import 'Experiment/ExpStateManager.dart';
 import 'Match_Pages/match_page.dart';
 import 'Pit_Recorder/Pit_Recorder.dart';
@@ -63,7 +64,7 @@ class _HomePageState extends State<HomePage>
       theme: ThemeData(
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor:
-            isdarkmode() ? const Color(0xFFFFFFFF) : const Color(0xFF151515),
+            islightmode() ? lightColors.white : darkColors.goodblack,
       ),
       home: Scaffold(
         drawer: const NavBar(),
@@ -98,11 +99,17 @@ class _HomePageState extends State<HomePage>
               buildButton(
                 context: context,
                 text: 'Qualitative Scouting',
-                color: const Color.fromARGB(192, 241, 131, 131),
-                borderColor: const Color.fromARGB(255, 255, 0, 0),
+                color: islightmode()
+                    ? Color.fromARGB(192, 241, 131, 131)
+                    : darkColors.advay_dark_red,
+                borderColor: const Color.fromARGB(255, 248, 0, 0),
                 icon: Icons.question_answer_outlined,
-                textColor: const Color.fromARGB(255, 172, 18, 18),
-                iconColor: const Color.fromARGB(255, 172, 18, 18),
+                textColor: islightmode()
+                    ? Color.fromARGB(255, 172, 18, 18)
+                    : const Color.fromARGB(255, 248, 0, 0),
+                iconColor: islightmode()
+                    ? Color.fromARGB(255, 172, 18, 18)
+                    : const Color.fromARGB(255, 248, 0, 0),
                 onPressed: () {
                   Navigator.push(
                       context,
@@ -115,11 +122,19 @@ class _HomePageState extends State<HomePage>
               buildButton(
                 context: context,
                 text: 'Match Scouting',
-                color: Colors.green.shade100,
-                borderColor: Colors.green.shade800,
+                color: islightmode()
+                    ? Colors.green.shade100
+                    : darkColors.advay_dark_green,
+                borderColor: islightmode()
+                    ? Colors.green.shade800
+                    : const Color.fromARGB(255, 80, 218, 87),
                 icon: Icons.play_arrow_outlined,
-                textColor: Colors.green.shade800,
-                iconColor: Colors.green.shade800,
+                textColor: islightmode()
+                    ? Colors.green.shade800
+                    : const Color.fromARGB(255, 80, 218, 87),
+                iconColor: islightmode()
+                    ? Colors.green.shade800
+                    : const Color.fromARGB(255, 80, 218, 87),
                 onPressed: () {
                   Navigator.push(
                       context,
@@ -132,7 +147,9 @@ class _HomePageState extends State<HomePage>
               buildButton(
                 context: context,
                 text: 'Record Pit',
-                color: Colors.blue.shade100,
+                color: islightmode()
+                    ? Colors.blue.shade100
+                    : darkColors.advay_dark_blue,
                 borderColor: Colors.blueAccent,
                 icon: Icons.bookmark_add_outlined,
                 textColor: Colors.blueAccent,
@@ -145,6 +162,29 @@ class _HomePageState extends State<HomePage>
                           fullscreenDialog: true));
                 },
               ),
+              const SizedBox(height: 12),
+              buildButton(
+                context: context,
+                text: 'Pit Checklist',
+                color: islightmode()
+                    ? const Color.fromARGB(255, 230, 187, 251)
+                    : darkColors.advay_dark_purple,
+                borderColor: islightmode()
+                    ? const Color.fromARGB(255, 59, 24, 84)
+                    : const Color.fromARGB(255, 174, 111, 219),
+                icon: Icons.bookmark_add_outlined,
+                textColor: islightmode()
+                    ? const Color.fromARGB(255, 78, 26, 96)
+                    : const Color.fromARGB(255, 174, 111, 219),
+                iconColor: const Color.fromARGB(255, 174, 111, 219),
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const PitCheckListPage(),
+                          fullscreenDialog: true));
+                },
+              ),
               const SizedBox(height: 5),
             ];
 
@@ -154,7 +194,7 @@ class _HomePageState extends State<HomePage>
               width: MediaQuery.of(context).size.width,
               height: height,
               decoration: BoxDecoration(
-                color: isdarkmode()
+                color: islightmode()
                     ? const Color(0xFFFFFFFF)
                     : const Color.fromARGB(255, 32, 30, 30),
                 borderRadius: const BorderRadius.only(
@@ -199,7 +239,7 @@ class _HomePageState extends State<HomePage>
             return Container(
               margin: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isdarkmode()
+                color: islightmode()
                     ? const Color(0xFFFFFFFF)
                     : const Color.fromARGB(255, 1, 1, 1),
                 borderRadius: BorderRadius.circular(20),
@@ -218,7 +258,7 @@ class _HomePageState extends State<HomePage>
                   style: GoogleFonts.chivoMono(
                     fontSize: 30,
                     fontWeight: FontWeight.w300,
-                    color: isdarkmode()
+                    color: islightmode()
                         ? const Color(0xFFFFFFFF)
                         : const Color.fromARGB(255, 179, 25, 25),
                   ),
@@ -343,7 +383,7 @@ Widget _buildCustomAppBar(BuildContext context) {
     leading: Builder(builder: (context) {
       return IconButton(
           icon: const Icon(Icons.menu),
-          color: !isdarkmode()
+          color: !islightmode()
               ? const Color.fromARGB(193, 255, 255, 255)
               : const Color.fromARGB(105, 36, 33, 33),
           onPressed: () => Scaffold.of(context).openDrawer());

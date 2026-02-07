@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:scouting_app/components/Button.dart';
 import 'package:scouting_app/components/FullScreenQrCodePage.dart';
+import 'package:scouting_app/main.dart';
 import 'package:scouting_app/services/DataBase.dart';
 import 'package:scouting_app/components/TextBox.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../services/Colors.dart';
 
 class QualitativePage extends StatefulWidget {
   final QualitativeRecord record;
@@ -19,6 +22,7 @@ class _QualitativePage extends State<QualitativePage> {
   TextEditingController robotMatchStrategy = TextEditingController();
   TextEditingController defensePlay = TextEditingController();
   TextEditingController humanPlayerRole = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -31,17 +35,24 @@ class _QualitativePage extends State<QualitativePage> {
     print(widget.record);
 
     robotMatchStrategy.text = widget.record.getQ1();
-    defensePlay.text = widget.record
-        .getQ2(); // Changed from widget.record.q2 to widget.record.getQ2()
-    humanPlayerRole.text = widget.record
-        .getQ3(); // Changed from widget.record.q3 to widget.record.getQ3()
+    defensePlay.text = widget.record.getQ2();
+    humanPlayerRole.text = widget.record.getQ3();
   }
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = Colors.transparent;
+
     return Scaffold(
       appBar: AppBar(
-        actions: const [],
+        leading: Builder(builder: (context) {
+          return IconButton(
+              icon: const Icon(Icons.arrow_back),
+              color: !islightmode()
+                  ? const Color.fromARGB(193, 255, 255, 255)
+                  : const Color.fromARGB(105, 36, 33, 33),
+              onPressed: () => Navigator.of(context).pop());
+        }),
         title: ShaderMask(
             shaderCallback: (bounds) => const LinearGradient(
                   colors: [Colors.red, Colors.blue],
@@ -51,42 +62,46 @@ class _QualitativePage extends State<QualitativePage> {
             child: Text(
               widget.record.matchNumber.toString(),
               style: GoogleFonts.museoModerno(
-                fontSize: 40,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
+                  fontSize: 40,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white),
             )),
-        backgroundColor: Colors.transparent,
+        backgroundColor:
+            islightmode() ? lightColors.white : darkColors.goodblack,
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildQuestions(),
-            SizedBox(height: 20),
-            SizedBox(height: 20),
-            buildButton(
-              text: "Qr Code",
-              onPressed: () {
-                _recordData();
-                PopBoard(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FullScreenQrCodePage(
-                      data: json.encode(widget.record
-                          .toJson()), // Using toJson() for proper JSON serialization
+        child: Container(
+          color: backgroundColor,
+          child: Column(
+            children: [
+              _buildQuestions(),
+              SizedBox(height: 20),
+              SizedBox(height: 20),
+              buildButton(
+                text: "Qr Code",
+                onPressed: () {
+                  _recordData();
+                  PopBoard(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FullScreenQrCodePage(
+                        data: json.encode(widget.record.toJson()),
+                      ),
                     ),
-                  ),
-                );
-              },
-              context: context,
-              color: Colors.green,
-              textColor: Colors.white,
-              icon: Icons.qr_code_2,
-            ),
-            SizedBox(height: 20),
-          ],
+                  );
+                },
+                context: context,
+                color: Colors.green,
+                textColor: !islightmode()
+                    ? const Color.fromARGB(255, 255, 255, 255)
+                    : const Color.fromARGB(255, 0, 0, 0),
+                icon: Icons.qr_code_2,
+              ),
+              SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -135,7 +150,10 @@ class _QualitativePage extends State<QualitativePage> {
               buildTextBox(category["question"], category["observation"],
                   category["icon"], category["controller"]),
             ],
-            category["icon"],
+            Icon(
+              Icons.help,
+              color: Colors.transparent,
+            ),
           );
         }).toList(),
       ),

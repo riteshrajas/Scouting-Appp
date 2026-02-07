@@ -1,9 +1,13 @@
 import 'dart:math';
+
+import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
-import 'package:confetti/confetti.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
+
+import '../main.dart';
+import '../services/Colors.dart';
 
 class ScouterList extends StatefulWidget {
   const ScouterList({super.key});
@@ -80,15 +84,16 @@ class _ScouterListState extends State<ScouterList>
   void _addScouter() {
     String newName = '';
     Color selectedColor = _avatarColors[Random().nextInt(_avatarColors.length)];
-    IconData selectedIcon = _avatarIcons[Random().nextInt(_avatarIcons.length)];
+    int selectedIconIndex = Random()
+        .nextInt(_avatarIcons.length); // Store index instead of IconData
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: islightmode() ? Colors.white : darkColors.goodblack,
           title: Row(
             children: [
               Icon(Icons.person_add_alt_1, color: Colors.blueAccent),
@@ -98,7 +103,7 @@ class _ScouterListState extends State<ScouterList>
                 style: GoogleFonts.museoModerno(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: islightmode() ? Colors.black : Colors.white,
                 ),
               ),
             ],
@@ -109,21 +114,27 @@ class _ScouterListState extends State<ScouterList>
               children: [
                 TextField(
                   onChanged: (value) => newName = value,
-                  style: TextStyle(color: Colors.black87),
+                  style: TextStyle(
+                      color: islightmode() ? Colors.black87 : Colors.white),
                   decoration: InputDecoration(
                     hintText: "Enter scouter name",
-                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    hintStyle: TextStyle(
+                        color: islightmode()
+                            ? Colors.black87
+                            : Color.fromARGB(255, 223, 222, 222)),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15)),
+                        borderRadius: BorderRadius.circular(12)),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: const Color.fromARGB(14, 245, 245, 245),
                     prefixIcon: Icon(Icons.badge, color: Colors.blueAccent),
                   ),
                 ),
                 SizedBox(height: 20),
                 Text(
                   'Choose Avatar Color',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: islightmode() ? Colors.black : Colors.white),
                 ),
                 SizedBox(height: 10),
                 Wrap(
@@ -139,7 +150,11 @@ class _ScouterListState extends State<ScouterList>
                         decoration: BoxDecoration(
                           color: color,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(
+                              color: islightmode()
+                                  ? Colors.white
+                                  : Color.fromARGB(108, 63, 63, 63),
+                              width: 2),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
@@ -155,21 +170,26 @@ class _ScouterListState extends State<ScouterList>
                 SizedBox(height: 20),
                 Text(
                   'Choose Avatar Icon',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: islightmode() ? Colors.black : Colors.white),
                 ),
                 SizedBox(height: 10),
                 Wrap(
                   spacing: 12,
                   children: _avatarIcons.map((icon) {
+                    int iconIndex = _avatarIcons.indexOf(icon);
                     return GestureDetector(
                       onTap: () {
-                        selectedIcon = icon;
+                        selectedIconIndex = iconIndex; // Update index
                       },
                       child: Container(
                         padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(10),
+                          color: islightmode()
+                              ? Colors.grey[100]
+                              : Color.fromARGB(14, 245, 245, 245),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(icon, color: Colors.blueAccent),
                       ),
@@ -203,7 +223,8 @@ class _ScouterListState extends State<ScouterList>
                     Map<String, dynamic> scouter = {
                       'name': newName.trim(),
                       'color': selectedColor.value,
-                      'icon': selectedIcon.codePoint,
+                      'iconIndex':
+                          selectedIconIndex, // Store index instead of codePoint
                     };
 
                     // Create a completely new list with converted data
@@ -218,13 +239,12 @@ class _ScouterListState extends State<ScouterList>
                           'color': _avatarColors[
                                   newList.length % _avatarColors.length]
                               .value,
-                          'icon':
-                              _avatarIcons[newList.length % _avatarIcons.length]
-                                  .codePoint,
+                          'iconIndex':
+                              newList.length % _avatarIcons.length, // Use index
                         });
-                      } else if (item is Map) {
+                      } else if (item is Map<String, dynamic>) {
                         // Keep existing map
-                        newList.add(item as Map<String, dynamic>);
+                        newList.add(item);
                       }
                     }
 
@@ -301,7 +321,7 @@ class _ScouterListState extends State<ScouterList>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text('Remove Scouter?', style: GoogleFonts.museoModerno()),
         content: Text('Are you sure you want to remove $name?'),
         actions: [
@@ -339,19 +359,24 @@ class _ScouterListState extends State<ScouterList>
     return Stack(
       alignment: Alignment.topCenter,
       children: [
-        Card(
-          margin: const EdgeInsets.all(20),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          elevation: 8,
-          shadowColor: Colors.blueAccent.withOpacity(0.2),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [Colors.white, Colors.blue.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+              color: islightmode() ? Colors.white : const Color(0xFF2A2A2A),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(islightmode() ? 0.08 : 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(
+                color: islightmode()
+                    ? Colors.grey.withOpacity(0.2)
+                    : Colors.white.withOpacity(0.05),
+                width: 1,
               ),
             ),
             padding: const EdgeInsets.all(20),
@@ -363,24 +388,56 @@ class _ScouterListState extends State<ScouterList>
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.people_alt,
-                            size: 28, color: Colors.blueAccent),
-                        SizedBox(width: 10),
-                        Text(
-                          'Scouting Team',
-                          style: GoogleFonts.museoModerno(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: const Icon(Icons.people_alt_rounded,
+                              size: 24, color: Colors.blueAccent),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Scouting Team',
+                              style: GoogleFonts.museoModerno(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: islightmode()
+                                    ? Colors.black87
+                                    : Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${_scouterNames.length} Members',
+                              style: GoogleFonts.roboto(
+                                fontSize: 12,
+                                color: islightmode()
+                                    ? Colors.grey[600]
+                                    : Colors.grey[400],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                     IconButton(
-                      icon: Icon(Icons.shuffle, color: Colors.purpleAccent),
-                      tooltip: 'Pick Random Scouter',
-                      onPressed: _selectRandomScouter,
-                    ),
+                        icon: Icon(Icons.shuffle,
+                            color: islightmode()
+                                ? Colors.grey[700]
+                                : Colors.grey[300]),
+                        tooltip: 'Pick Random Scouter',
+                        onPressed: _selectRandomScouter,
+                        style: IconButton.styleFrom(
+                          backgroundColor: islightmode()
+                              ? Colors.grey[100]
+                              : Colors.grey[800],
+                          highlightColor: Colors.blueAccent.withOpacity(0.2),
+                        )),
                   ],
                 ),
 
@@ -390,7 +447,7 @@ class _ScouterListState extends State<ScouterList>
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Container(
                         padding:
-                            EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           gradient: LinearGradient(
@@ -442,7 +499,9 @@ class _ScouterListState extends State<ScouterList>
                               'Add your first scouter!',
                               textStyle: GoogleFonts.museoModerno(
                                 fontSize: 18,
-                                color: Colors.blueGrey,
+                                color: islightmode()
+                                    ? Colors.blueGrey
+                                    : const Color.fromARGB(255, 167, 169, 197),
                               ),
                               speed: Duration(milliseconds: 100),
                             ),
@@ -470,10 +529,10 @@ class _ScouterListState extends State<ScouterList>
                             name = scouter['name'] ?? 'Unknown';
                             color =
                                 Color(scouter['color'] ?? Colors.blue.value);
-                            iconData = IconData(
-                              scouter['icon'] ?? Icons.person.codePoint,
-                              fontFamily: 'MaterialIcons',
-                            );
+                            int iconIndex =
+                                scouter['iconIndex'] ?? 0; // Retrieve index
+                            iconData = _avatarIcons[iconIndex %
+                                _avatarIcons.length]; // Use constant list
                           } else {
                             // Fallback for unexpected data type
                             name = "Scouter ${index + 1}";
@@ -491,7 +550,7 @@ class _ScouterListState extends State<ScouterList>
                               ),
                               alignment: Alignment.centerRight,
                               child: Icon(Icons.delete_forever,
-                                  color: Colors.white),
+                                  color: Colors.black),
                             ),
                             direction: DismissDirection.endToStart,
                             onDismissed: (_) => _removeScouter(index),
@@ -511,11 +570,11 @@ class _ScouterListState extends State<ScouterList>
                                     Text(
                                       name,
                                       style: GoogleFonts.museoModerno(
-                                        fontSize: 16,
-                                        color: _selectedChip == name
-                                            ? Colors.white
-                                            : Colors.black87,
-                                      ),
+                                          fontSize: 16,
+                                          color: islightmode() &&
+                                                  _selectedChip != name
+                                              ? Colors.black
+                                              : Colors.white),
                                     ),
                                   ],
                                 ),
@@ -530,7 +589,9 @@ class _ScouterListState extends State<ScouterList>
                                   });
                                 },
                                 selectedColor: color.withAlpha(80),
-                                backgroundColor: Colors.white,
+                                backgroundColor: islightmode()
+                                    ? Colors.grey[300]
+                                    : Colors.black,
                                 labelPadding: EdgeInsets.symmetric(
                                     horizontal: 12, vertical: 8),
                                 shape: RoundedRectangleBorder(

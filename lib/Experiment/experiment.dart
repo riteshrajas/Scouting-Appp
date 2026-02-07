@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:scouting_app/main.dart';
+import 'package:scouting_app/services/Colors.dart';
 import 'ExpStateManager.dart';
 
 class Experiment extends StatefulWidget {
@@ -55,6 +57,7 @@ class _ExperimentState extends State<Experiment> {
         children: <Widget>[
           ListTile(
             title: const Text('Template Studio'),
+            textColor: islightmode() ? Colors.grey.withOpacity(0.4) : lightColors.white,
             trailing: Switch(
               value: templateStudioEnabled,
               onChanged: (bool value) {
@@ -82,6 +85,7 @@ class _ExperimentState extends State<Experiment> {
             ),
           ListTile(
             title: const Text('Card Builder'),
+            textColor: islightmode() ? Colors.grey.withOpacity(0.4) : lightColors.white,
             trailing: Switch(
               value: cardBuilderEnabled,
               onChanged: (bool value) {

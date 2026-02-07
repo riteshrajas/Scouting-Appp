@@ -6,7 +6,6 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 
 import 'components/Chips.dart';
 import 'components/nav.dart';
-import 'main.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
@@ -166,35 +165,35 @@ class AboutPage extends StatelessWidget {
   Widget _buildTeamJourneySection() {
     final List<Map<String, dynamic>> timelineEvents = [
       {
-        'year': '2007',
+        'year': '1998',
         'title': 'Team Founded',
         'description': 'FEDS 201 was established at Rochester High School',
         'icon': Icons.flag,
         'color': Colors.green,
       },
       {
-        'year': '2018',
+        'year': '2000',
         'title': 'First Major Award',
-        'description': 'Won the Engineering Excellence Award',
+        'description': 'Won 2000 Great Lakes Regionals',
         'icon': Icons.emoji_events,
         'color': Colors.amber,
       },
       {
-        'year': '2021',
+        'year': '2024',
         'title': 'Scout-Ops Concept',
         'description': 'Initial idea for a custom scouting solution',
         'icon': Icons.lightbulb,
         'color': Colors.orange,
       },
       {
-        'year': '2023',
+        'year': 'Jan, 2025',
         'title': 'Scout-Ops Launch',
         'description': 'First competition using our custom scouting app',
         'icon': Icons.rocket_launch,
         'color': Colors.blue,
       },
       {
-        'year': '2024',
+        'year': 'Feb, 2025',
         'title': 'Scout-Ops 2.0',
         'description': 'Major overhaul with new features and improvements',
         'icon': Icons.upgrade,
@@ -492,7 +491,7 @@ class AboutPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 15),
                     Text(
-                      "Development began in 2021 with a small team of student programmers. We aimed to create an app that would streamline the scouting process, provide real-time data analysis, and be user-friendly for all team members.",
+                      "Development began in 2024 with a small team of student programmers. We aimed to create an app that would streamline the scouting process, provide real-time data analysis, and be user-friendly for all team members.",
                       style: TextStyle(
                           fontSize: 16, height: 1.5, color: Colors.black),
                       textAlign: TextAlign.justify,
@@ -854,7 +853,8 @@ class AboutPage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemBuilder: (context, index) {
                 return Container(
-                  width: 180,
+                  width: 300,
+                  height: 300,
                   margin: const EdgeInsets.only(right: 15),
                   child: Card(
                     elevation: 4,
@@ -868,10 +868,10 @@ class AboutPage extends StatelessWidget {
                         children: [
                           Icon(
                             teamRoles[index]['icon'] as IconData,
-                            size: 40,
+                            size: 20,
                             color: teamRoles[index]['color'] as Color,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           Text(
                             teamRoles[index]['role'] as String,
                             style: GoogleFonts.orbitron(
@@ -880,14 +880,30 @@ class AboutPage extends StatelessWidget {
                               color: teamRoles[index]['color'] as Color,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 3),
                           Text(
                             teamRoles[index]['description'] as String,
                             style: TextStyle(
                               fontSize: 12,
-                              color: isdarkmode()
-                                  ? Colors.white70
-                                  : Colors.black87,
+                              color: Colors.black,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Role: ${teamRoles[index]['role']}",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "Description: ${teamRoles[index]['description']}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -996,17 +1012,6 @@ class AboutPage extends StatelessWidget {
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Open GitHub repository
-                    launchUrl(
-                        Uri.parse("https://github.com/your-repo-url-here"));
-                  },
-                  child: Text("View on GitHub"),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
                     // Open The Blue Alliance
                     launchUrl(Uri.parse("https://www.thebluealliance.com/"));
                   },
@@ -1101,7 +1106,7 @@ class AboutPage extends StatelessWidget {
 
                 // Contact Methods
                 _buildContactMethod(
-                    Icons.email, "Email Us", "feds201@google.com"),
+                    Icons.email, "Email Us", "feds201@gmail.com"),
                 _buildContactMethod(
                     Icons.language, "Team Website", "https://www.feds201.com"),
                 _buildContactMethod(Icons.location_on, "Visit Us",

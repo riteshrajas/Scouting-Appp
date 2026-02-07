@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:scouting_app/components/CameraComposit.dart';
+import 'package:scouting_app/main.dart';
+import 'package:scouting_app/services/Colors.dart';
 import 'package:scouting_app/services/DataBase.dart';
 import 'package:scouting_app/components/TextBox.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,19 +22,22 @@ class Record extends StatefulWidget {
 
 class _RecordState extends State<Record> {
   int _pressCount = 0;
-  final int _requiredPresses = 5;
+  final int _requiredPresses = 1;
 
   late ConfettiController _confettiController;
 
   late String DrivetrainController;
   late String AutonController;
   late List<String> ScoreTypeController;
-  late String IntakeController;
+  late List<String> IntakeController;
   late List<String> ClimbTypeController;
   late List<String> ScoreObjectController;
   late bool? hello;
   late String selectedChoice;
-  late String ImageBlob;
+  late String ImageBlob1;
+  late String ImageBlob2;
+  late String ImageBlob3;
+  late String ImageBlob; // Add this variable to store combined images
 
   @override
   void initState() {
@@ -45,12 +49,15 @@ class _RecordState extends State<Record> {
     DrivetrainController = "";
     AutonController = "";
     ScoreTypeController = [];
-    IntakeController = "";
+    IntakeController = [];
     ClimbTypeController = [];
     ScoreObjectController = [];
     hello = null;
     selectedChoice = '';
-    ImageBlob = "";
+    ImageBlob1 = "";
+    ImageBlob2 = "";
+    ImageBlob3 = "";
+    ImageBlob = ""; // Initialize the combined blob
 
     // Load database and try to get existing data for this team
     PitDataBase.LoadAll();
@@ -65,7 +72,16 @@ class _RecordState extends State<Record> {
           IntakeController = existingRecord.intake;
           ClimbTypeController = existingRecord.climbType;
           ScoreObjectController = existingRecord.scoreObject;
-          ImageBlob = existingRecord.imageblob;
+          ImageBlob1 = existingRecord.botImage1;
+          ImageBlob2 = existingRecord.botImage2;
+          ImageBlob3 = existingRecord.botImage3;
+
+          // Combine the existing images into ImageBlob
+          // Filter out empty images and join with comma
+          List<String> images = [ImageBlob1, ImageBlob2, ImageBlob3]
+              .where((img) => img.isNotEmpty)
+              .toList();
+          ImageBlob = images.join(',');
         });
         print("Loaded existing data for team ${widget.team.teamNumber}");
       } else {
@@ -81,6 +97,8 @@ class _RecordState extends State<Record> {
     return Scaffold(
       appBar: AppBar(
         actions: const [],
+        backgroundColor:
+            islightmode() ? lightColors.white : darkColors.goodblack,
         title: ShaderMask(
             shaderCallback: (bounds) => const LinearGradient(
                   colors: [Colors.red, Colors.blue],
@@ -140,13 +158,13 @@ class _RecordState extends State<Record> {
               buildMultiChoiceBox(
                   "Where can they score?",
                   Icon(Icons.star_outline, size: 30, color: Colors.blue),
-                  ["L1", "L2", "L3", "L4", "Barge"],
+                  ["L1", "L2", "L3", "L4", "Barge", "Processor"],
                   ScoreTypeController, (value) {
                 setState(() {
                   ScoreTypeController = value;
                 });
               }),
-              buildChoiceBox(
+              buildMultiChoiceBox(
                   "How do they INTAKE Coral",
                   Icon(Icons.shopping_cart_checkout_outlined,
                       size: 30, color: Colors.green),
@@ -167,12 +185,47 @@ class _RecordState extends State<Record> {
                 });
               }),
               Icon(Icons.question_answer),
-              CameraPhotoCapture(onPhotoTaken: (photo) {
-                print('Photo captured: $photo');
-                // Convert the captured photo to base64
-                ImageBlob = base64Encode(photo.readAsBytesSync());
-                developer.log(ImageBlob);
-              }),
+
+              // Camera component with previously captured images
+              CameraPhotoCapture(
+                title: "Robot Photos",
+                description: "Take photos of the robot",
+                maxPhotos: 3,
+                initialImages: [ImageBlob1, ImageBlob2, ImageBlob3]
+                    .where((img) => img.isNotEmpty)
+                    .toList(),
+                onPhotosTaken: (photos) {
+                  // Convert all photos to base64 strings
+                  List<String> base64Images = [];
+                  for (var photo in photos) {
+                    base64Images.add(base64Encode(photo.readAsBytesSync()));
+                  }
+
+                  setState(() {
+                    // Store the combined base64 strings
+                    ImageBlob = base64Images.join(',');
+
+                    // Also update individual image blobs if needed
+                    if (base64Images.isNotEmpty && base64Images.length >= 1) {
+                      ImageBlob1 = base64Images[0];
+                    } else {
+                      ImageBlob1 = "";
+                    }
+                    if (base64Images.isNotEmpty && base64Images.length >= 2) {
+                      ImageBlob2 = base64Images[1];
+                    } else {
+                      ImageBlob2 = "";
+                    }
+                    if (base64Images.isNotEmpty && base64Images.length >= 3) {
+                      ImageBlob3 = base64Images[2];
+                    } else {
+                      ImageBlob3 = "";
+                    }
+                  });
+
+                  print('Photos captured: ${photos.length}');
+                },
+              ),
               const SizedBox(height: 20),
               _buildFunButton(),
             ],
@@ -263,7 +316,9 @@ class _RecordState extends State<Record> {
         intake: IntakeController,
         climbType: ClimbTypeController,
         scoreObject: ScoreObjectController.cast<String>().toList(),
-        imageblob: ImageBlob);
+        botImage1: ImageBlob1,
+        botImage2: ImageBlob2,
+        botImage3: ImageBlob3);
 
     print('Recording data: $record');
     print("Hiv ${record.toJson()}");

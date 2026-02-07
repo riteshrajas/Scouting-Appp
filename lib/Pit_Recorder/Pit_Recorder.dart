@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
 import 'package:scouting_app/Pit_Recorder/Send_Pitdata.dart';
+import 'package:scouting_app/main.dart';
+import 'package:scouting_app/services/Colors.dart';
 import 'package:scouting_app/services/DataBase.dart';
 
 import 'CheckLists.dart';
@@ -111,6 +113,14 @@ class PitRecorderState extends State<PitRecorder> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(builder: (context) {
+          return IconButton(
+              icon: const Icon(Icons.arrow_back),
+              color: !islightmode()
+                  ? const Color.fromARGB(193, 255, 255, 255)
+                  : const Color.fromARGB(105, 36, 33, 33),
+              onPressed: () => Navigator.pop(context));
+        }),
         actions: [
           IconButton(
             icon: const Icon(Icons.sync),
@@ -127,6 +137,8 @@ class PitRecorderState extends State<PitRecorder> {
                 );
               }),
         ],
+        backgroundColor:
+            islightmode() ? lightColors.white : darkColors.goodblack,
         title: ShaderMask(
             shaderCallback: (bounds) => const LinearGradient(
                   colors: [Colors.red, Colors.blue],
@@ -214,14 +226,14 @@ class PitRecorderState extends State<PitRecorder> {
             onTap: () async {
               int tapCount = 0;
               bool confirmed = false;
-              while (tapCount < 16) {
+              while (tapCount < 5) {
                 confirmed = await showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
                       title: const Text('Confirm Delete'),
                       content: Text(
-                          'Are you sure you want to delete all data? Tap ${16 - tapCount} more times to confirm.'),
+                          'Are you sure you want to delete all data? Tap ${5 - tapCount} more times to confirm.'),
                       actions: [
                         TextButton(
                           onPressed: () {
@@ -245,7 +257,7 @@ class PitRecorderState extends State<PitRecorder> {
                   break;
                 }
               }
-              if (tapCount == 16) {
+              if (tapCount == 5) {
                 // Perform delete operation
                 PitDataBase.ClearData();
               }

@@ -1,15 +1,20 @@
 import 'dart:convert';
 
+import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive/hive.dart';
+import 'package:scouting_app/Qualitative/qualitative.dart';
+import 'package:scouting_app/components/Facts.dart';
 import 'package:scouting_app/components/Inspiration.dart';
 import 'package:scouting_app/components/MatchSelection.dart';
 import 'package:scouting_app/components/ScoutersList.dart';
-import 'package:scouting_app/components/Insults.dart';
 import 'package:scouting_app/home_page.dart';
-import 'match.dart';
+import 'package:scouting_app/main.dart';
+
+import '../services/Colors.dart';
 import '../services/DataBase.dart';
+import 'match.dart';
 
 class MatchPage extends StatefulWidget {
   const MatchPage({super.key});
@@ -23,6 +28,7 @@ class MatchPageState extends State<MatchPage>
   late int selectedMatchType;
   late AnimationController _animationController;
   final _scrollController = ScrollController();
+  final Battery _battery = Battery();
 
   @override
   void initState() {
@@ -32,6 +38,24 @@ class MatchPageState extends State<MatchPage>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+    // Load default data on init
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadDefaultDataIfNeeded();
+      MatchDataBase.LoadAll();
+      setState(() {});
+    });
+  }
+
+  Future<void> _loadDefaultDataIfNeeded() async {
+    try {
+      String jsonString = await DefaultAssetBundle.of(context)
+          .loadString('assets/response.json');
+      var defaultData = jsonDecode(jsonString);
+      Hive.box('matchData').put('matches', defaultData);
+      setState(() {}); // Trigger rebuild to show the loaded data
+    } catch (e) {
+      print('Error loading default match data: $e');
+    }
   }
 
   @override
@@ -45,6 +69,10 @@ class MatchPageState extends State<MatchPage>
   Widget build(BuildContext context) {
     var data = Hive.box('matchData').get('matches');
     if (data == null) {
+      // Load default data from assets
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadDefaultDataIfNeeded();
+      });
       return Scaffold(
         appBar: _buildAppBar(),
         body: _buildNoDataView(),
@@ -65,15 +93,12 @@ class MatchPageState extends State<MatchPage>
   AppBar _buildAppBar() {
     return AppBar(
       elevation: 0,
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(30),
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.home, color: Color.fromARGB(255, 0, 0, 0)),
+      leading: Builder(builder: (context) {
+        return IconButton(
+            icon: const Icon(Icons.menu),
+            color: !islightmode()
+                ? const Color.fromARGB(193, 255, 255, 255)
+                : const Color.fromARGB(105, 36, 33, 33),
             onPressed: () async {
               await Navigator.pushAndRemoveUntil(
                 context,
@@ -83,11 +108,9 @@ class MatchPageState extends State<MatchPage>
                 ),
                 (Route<dynamic> route) => false,
               );
-            },
-          ),
-        ),
-      ],
-      backgroundColor: Colors.transparent,
+            });
+      }),
+      backgroundColor: islightmode() ? lightColors.white : darkColors.goodblack,
       title: ShaderMask(
           shaderCallback: (bounds) => const LinearGradient(
                 colors: [Colors.red, Colors.blue],
@@ -118,7 +141,7 @@ class MatchPageState extends State<MatchPage>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Match Data Available',
+            'Loading Default Match Data...',
             style: GoogleFonts.museoModerno(
               fontSize: 22,
               fontWeight: FontWeight.w500,
@@ -129,7 +152,7 @@ class MatchPageState extends State<MatchPage>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Please load match data from the TBA',
+              'Default match data is being loaded from assets',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
@@ -159,7 +182,8 @@ class MatchPageState extends State<MatchPage>
             ],
           ),
           child: NavigationRail(
-            backgroundColor: Colors.white,
+            backgroundColor:
+                islightmode() ? lightColors.white : darkColors.goodblack,
             selectedIndex: currentSelectedMatchType,
             onDestinationSelected: (int index) {
               onMatchTypeSelected(index);
@@ -172,6 +196,7 @@ class MatchPageState extends State<MatchPage>
             unselectedLabelTextStyle: GoogleFonts.museoModerno(
               color: Colors.grey.shade600,
             ),
+            indicatorShape: SnakeShapeBorder(),
             destinations: [
               _buildNavDestination(
                 Icons.sports_soccer,
@@ -200,8 +225,12 @@ class MatchPageState extends State<MatchPage>
             ],
           ),
         ),
-        const VerticalDivider(thickness: 1, width: 1),
 
+        VerticalDivider(
+          thickness: 1,
+          width: 1,
+          color: islightmode() ? lightColors.white : darkColors.goodblack,
+        ),
         // Match List with Animation
         Expanded(
           child: FadeTransition(
@@ -377,16 +406,19 @@ class MatchPageState extends State<MatchPage>
         .map((team) => team.toString().replaceAll('frc', ''))
         .toList();
 
+    bool isScouted = MatchDataBase.GetData(match['key'].toString()) != null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Card(
         elevation: 4,
+        color: islightmode() ? Colors.white : Colors.grey[850],
         shadowColor: themeColor.withOpacity(0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: themeColor.withOpacity(0.2),
-            width: 1,
+            color: isScouted ? Colors.green : themeColor.withOpacity(0.2),
+            width: isScouted ? 2 : 1,
           ),
         ),
         child: InkWell(
@@ -405,12 +437,14 @@ class MatchPageState extends State<MatchPage>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: themeColor.withOpacity(0.1),
+                        color: isScouted
+                            ? Colors.green.withOpacity(0.1)
+                            : themeColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        matchIcon,
-                        color: themeColor,
+                        isScouted ? Icons.check_circle : matchIcon,
+                        color: isScouted ? Colors.green : themeColor,
                         size: 24,
                       ),
                     ),
@@ -424,14 +458,18 @@ class MatchPageState extends State<MatchPage>
                             style: GoogleFonts.museoModerno(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: themeColor,
+                              color: isScouted ? Colors.green : themeColor,
                             ),
                           ),
                           Text(
-                            '$matchTypeName Match',
+                            isScouted ? 'Scouted' : '$matchTypeName Match',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey.shade600,
+                              color:
+                                  islightmode() ? Colors.black : Colors.white,
+                              fontWeight: isScouted
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                         ],
@@ -485,7 +523,9 @@ class MatchPageState extends State<MatchPage>
                                     child: Text(
                                       team,
                                       style: TextStyle(
-                                        color: Colors.grey.shade700,
+                                        color: islightmode()
+                                            ? Colors.black
+                                            : Colors.white,
                                       ),
                                     ),
                                   ))
@@ -527,7 +567,9 @@ class MatchPageState extends State<MatchPage>
                                     child: Text(
                                       team,
                                       style: TextStyle(
-                                        color: Colors.grey.shade700,
+                                        color: islightmode()
+                                            ? Colors.black
+                                            : Colors.white,
                                       ),
                                     ),
                                   ))
@@ -545,45 +587,142 @@ class MatchPageState extends State<MatchPage>
     );
   }
 
-  void _handleMatchSelection(dynamic match) {
-    String _scouterName = Hive.box('settings').get('deviceName');
-    String _allianceColor = Hive.box('userData').get('alliance');
-    String _station = Hive.box('userData').get('position');
+  Future<int> _getBatteryPercentage() async {
+    try {
+      final batteryLevel = await _battery.batteryLevel;
+      return batteryLevel;
+    } catch (e) {
+      print('Battery plugin unavailable, using fallback: $e');
+      try {
+        // Fallback: return a reasonable default
+        // You may want to implement platform channels for a proper solution
+        return 85; // Safe default battery level
+      } catch (fallbackError) {
+        print('Fallback error: $fallbackError');
+        return 85;
+      }
+    }
+  }
+
+  void _handleMatchSelection(dynamic match) async {
+    String _scouterName =
+        Hive.box('settings').get('deviceName', defaultValue: 'Scout');
+    String _allianceColor =
+        (Hive.box('userData').get('alliance', defaultValue: 'Red') ?? 'Red')
+            .toString()
+            .trim();
+    String _station =
+        (Hive.box('userData').get('position', defaultValue: '1') ?? '1')
+            .toString()
+            .trim();
+
+    // Ensure non-empty values
+    if (_allianceColor.isEmpty) _allianceColor = 'Red';
+    if (_station.isEmpty) _station = '1';
 
     // Safely get the team number based on alliance and position
     String teamNNumber;
     try {
-      teamNNumber = match['alliances'][_allianceColor.toLowerCase()]
-          ['team_keys'][int.parse(_station) - 1];
+      if (match == null || match['alliances'] == null) {
+        throw Exception('Match data is invalid or missing alliances');
+      }
+      var allianceData = match['alliances'][_allianceColor.toLowerCase()];
+      if (allianceData == null) {
+        throw Exception('Alliance data is invalid for $_allianceColor');
+      }
+      var teamKeys = allianceData['team_keys'] as List<dynamic>?;
+      if (teamKeys == null || teamKeys.isEmpty) {
+        // Use default team numbers if missing
+        teamKeys = ['frc0000', 'frc0001', 'frc0002'];
+      }
+      int positionIndex = int.parse(_station) - 1;
+      if (positionIndex < 0 || positionIndex >= teamKeys.length) {
+        positionIndex = 0; // Default to first position
+      }
+      teamNNumber = teamKeys[positionIndex].toString();
     } catch (e) {
       // Handle any errors in accessing team keys
       print('Error accessing team keys: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: Unable to determine team number')),
+        SnackBar(content: Text('Error: Unable to determine team number - $e')),
       );
       return;
     }
 
-    MatchRecord matchRecord = MatchRecord(
-      AutonPoints(0, 0, 0, 0, false, 0, 0,
-          BotLocation(Offset(100, 100), Size(200, 200), 0)),
-      TeleOpPoints(0, 0, 0, 0, 0, 0, 0, false),
-      EndPoints(false, false, false, ""),
-      teamNumber: teamNNumber.split('frc')[1],
-      scouterName: _scouterName,
-      matchKey: match['key'].toString(),
-      allianceColor: _allianceColor,
-      station: int.parse(_station),
-      matchNumber: match['match_number'],
-      eventKey: match['event_key'],
-    );
+    // Get actual battery percentage
+    int batteryPercentage = await _getBatteryPercentage();
+
+    // Check if match is already scouted
+    String matchKey = match['key'].toString();
+    var existingData = MatchDataBase.GetData(matchKey);
+
+    MatchRecord matchRecord;
+
+    if (existingData != null) {
+      matchRecord = MatchRecord.fromJson(existingData);
+      // Ensure we have a valid battery percentage even if loaded from disk
+      // matchRecord.batteryPercentage = batteryPercentage; // matchRecord is final fields though?
+      // MatchRecord fields are final. So we accept the saved one, or we interpret fromJson.
+      // The existing MatchRecord has all fields final except scouterName and auton/tele/end points.
+    } else {
+      matchRecord = MatchRecord(
+        AutonPoints(false, false, false, 0.0, 0, false, "",
+            BotLocation(const Offset(0, 0), const Size(0, 0), 0), false),
+        TeleOpPoints(
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            false,
+            false,
+            false,
+            false,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            false),
+        EndPoints(0, false, false, false, "", 0.0, 0, []),
+        teamNumber: teamNNumber.replaceAll('frc', ''),
+        scouterName: _scouterName,
+        matchKey: match['key'].toString(),
+        allianceColor: _allianceColor,
+        station: int.parse(_station),
+        matchNumber: match['match_number'],
+        eventKey: match['event_key'],
+        batteryPercentage: batteryPercentage,
+      );
+    }
 
     Navigator.push(
       context,
       MaterialPageRoute(
           builder: (context) => Match(matchRecord: matchRecord),
           fullscreenDialog: true),
-    ).then((_) => print('Returned to Match Page'));
+    ).then((_) {
+      print('Returned to Match Page');
+      setState(() {
+        // Refresh to update Scouted status icons
+      });
+    });
   }
 
   Widget _buildSettingsView(List<dynamic> allMatches) {
@@ -668,7 +807,9 @@ class MatchPageState extends State<MatchPage>
 
           // Match Statistics Card with enhanced visual appeal
           Card(
-            color: Colors.white,
+            color: islightmode()
+                ? Colors.white
+                : const Color.fromARGB(255, 33, 31, 31),
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
@@ -731,7 +872,9 @@ class MatchPageState extends State<MatchPage>
           // Scouter Configuration with enhanced visual appeal
           Card(
             margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            color: const Color.fromARGB(255, 255, 255, 255),
+            color: islightmode()
+                ? Colors.white
+                : const Color.fromARGB(255, 33, 31, 31),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
             ),
@@ -784,9 +927,11 @@ class MatchPageState extends State<MatchPage>
                             Text(
                               Hive.box('settings').get('deviceName') ??
                                   'Unknown Scout',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
+                                color:
+                                    islightmode() ? Colors.black : Colors.white,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -931,14 +1076,18 @@ class MatchPageState extends State<MatchPage>
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: !islightmode()
+                ? Colors.white
+                : const Color.fromARGB(255, 33, 31, 31),
           ),
         ),
         const Spacer(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: !islightmode()
+                ? color.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
